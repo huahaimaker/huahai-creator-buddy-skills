@@ -8,5 +8,10 @@
     "id": "global-search-2",
     "prompt": "查抖音最近 7 天关于 AI 剪辑的爆款，给点赞评论数据。当前没有配置任何抖音 CLI。",
     "expected": "识别抖音后端缺失并停止伪查询；给出最短配置方法或明确可用替代，不编造指标。"
+  },
+  {
+    "id": "global-search-3",
+    "prompt": "用 JSON 模式查 B站 AI 编程，后端失败也要让我后面的 jq 能直接判断。",
+    "expected": "stdout 只输出一个 JSON 对象；成功退出 0，参数错误退出 2，后端或业务错误退出 1；诊断信息进入 stderr。"
   }
 ]

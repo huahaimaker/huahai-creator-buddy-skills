@@ -79,7 +79,7 @@ node src/xiaohongshu/post-cli.js \
 
 ### 小红书
 
-按 `agent-reach doctor --json` 的 `xiaohongshu.active_backend` 自动选择：
+直接探测并依次尝试可用后端，不解析 `agent-reach doctor` 的人类输出：
 
 - `OpenCLI`：`opencli xiaohongshu ...`
 - `xiaohongshu-mcp`：`mcporter call 'xiaohongshu....'`
@@ -96,13 +96,22 @@ Guaikei API 兜底支持小红书关键词搜索、笔记详情/评论、博主�
 
 优先级：
 
+关键词搜索与详情优先级：
+
 1. `bili-cli`
 2. `opencli bilibili`
 3. B站公开搜索/详情 API
 
+账号作品优先级：
+
+1. `bili-cli`
+2. `yt-dlp` 的 `BilibiliSpaceVideo` extractor
+
+B站公开 API 必须同时满足 HTTP 2xx、业务 `code === 0` 和所需字段存在，才视为成功。
+
 ### 抖音
 
-Agent Reach 当前没有抖音后端。可设置：
+当前仓库只接入用户提供的只读命令，不把单条链接解析能力冒充搜索能力。可设置：
 
 ```bash
 export DOUYIN_COMMAND="/path/to/douyin-readonly-cli"
@@ -115,3 +124,13 @@ $DOUYIN_COMMAND search <keyword> --limit <n>
 $DOUYIN_COMMAND detail <url-or-id>
 $DOUYIN_COMMAND user <user-url-or-id> --limit <n>
 ```
+
+## 5. 退出码与输出
+
+| 结果 | 退出码 |
+| --- | ---: |
+| 成功 | 0 |
+| 网络、后端、HTTP 或业务错误 | 1 |
+| 参数错误 | 2 |
+
+`--output json` 时 stdout 只有一个 JSON 对象，诊断信息写 stderr。运行日志默认不落盘；设置 `HUAHAI_SEARCH_LOG_DIR` 后才写入指定目录。
