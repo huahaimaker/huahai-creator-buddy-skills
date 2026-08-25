@@ -837,6 +837,7 @@ def format_as_json(data: dict, max_items: int = 10):
     return {
         'keyword': data.get('keyword', ''),
         'total': len(result),
+        'scoreScope': 'current_query_relative_40_100',
         'items': result
     }
 
@@ -896,7 +897,12 @@ def main():
         
         print(f"✅ 数据已保存到: {output_file}")
         print(f"📊 查询关键词: {args.keyword}")
-        print(f"📈 总数据量: {sum(len(data.get(k, [])) for k in ['low_fan_explosive', 'ten_w_reading', 'original_rank', 'one_w_reading'])} 条")
+        raw_total = sum(
+            len(data.get(k, []))
+            for k in ['low_fan_explosive', 'ten_w_reading', 'original_rank', 'one_w_reading']
+        )
+        print(f"📦 接口候选量: {raw_total} 条")
+        print(f"✅ 相关性过滤后: {json_result['total']} 条")
         
     except Exception as e:
         print(f"❌ 错误: {str(e)}", file=sys.stderr)
