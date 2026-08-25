@@ -74,6 +74,9 @@ async function main() {
       time,
       limit,
     });
+    if (!result || result.raw === undefined || result.raw === null || String(result.raw).trim() === "") {
+      throw new Error(`后端 ${result && result.backend ? result.backend : "unknown"} 返回空结果`);
+    }
     const finalOutput = {
       status: "success",
       platform,

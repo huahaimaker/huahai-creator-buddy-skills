@@ -18,7 +18,7 @@ metadata:
 
 | 平台 | 关键词搜索 | 内容详情 | 账号作品 | 实际后端 |
 | --- | --- | --- | --- | --- |
-| 小红书 | 条件可用 | 条件可用 | 条件可用 | OpenCLI、已配置的 `xiaohongshu` MCP、`xhs-cli` 或 Guaikei |
+| 小红书 | 条件可用 | 条件可用 | 条件可用 | 搜索/详情可尝试 OpenCLI、MCP、`xhs-cli`、Guaikei；账号作品只接 OpenCLI 或 Guaikei |
 | B站 | 可用 | 可用 | 条件可用 | 公开 API；账号作品另需 `bili` 或 `yt-dlp` |
 | 抖音 | 条件可用 | 条件可用 | 条件可用 | 仅用户显式配置的 `DOUYIN_COMMAND` |
 

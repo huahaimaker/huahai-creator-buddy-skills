@@ -254,25 +254,39 @@ async function userXiaohongshu(url, options = {}) {
 
 async function searchBilibili(keyword, options = {}) {
   const limit = String(Math.min(Number(options.limit || 20), 50));
+  const failures = [];
   if (commandExists("bili")) {
-    return { backend: "bili-cli", raw: runCommand("bili", ["search", keyword, "--type", "video", "-n", limit]) };
+    try {
+      return { backend: "bili-cli", raw: runCommand("bili", ["search", keyword, "--type", "video", "-n", limit]) };
+    } catch (error) {
+      failures.push(`bili-cli: ${error.message}`);
+    }
   }
   if (commandExists("opencli")) {
-    return {
-      backend: "opencli bilibili",
-      raw: runCommand("opencli", ["bilibili", "search", keyword, "-f", "yaml"]),
-    };
+    try {
+      return {
+        backend: "opencli bilibili",
+        raw: runCommand("opencli", ["bilibili", "search", keyword, "-f", "yaml"]),
+      };
+    } catch (error) {
+      failures.push(`OpenCLI: ${error.message}`);
+    }
   }
-  const url =
-    "https://api.bilibili.com/x/web-interface/search/type?search_type=video&keyword=" +
-    encodeURIComponent(keyword) +
-    "&page=1";
-  const data = validateBilibiliResponse(await getJson(url), "搜索");
-  if (!data.data || !Array.isArray(data.data.result)) {
-    throw new Error("B站搜索返回结构无效: 缺少 data.result 数组");
+  try {
+    const url =
+      "https://api.bilibili.com/x/web-interface/search/type?search_type=video&keyword=" +
+      encodeURIComponent(keyword) +
+      "&page=1";
+    const data = validateBilibiliResponse(await getJson(url), "搜索");
+    if (!data.data || !Array.isArray(data.data.result)) {
+      throw new Error("B站搜索返回结构无效: 缺少 data.result 数组");
+    }
+    data.data.result = data.data.result.slice(0, Number(limit));
+    return { backend: "bilibili-public-api", raw: JSON.stringify(data, null, 2) };
+  } catch (error) {
+    failures.push(`public-api: ${error.message}`);
+    throw new Error(`B站搜索全部后端失败：${failures.join("；")}`);
   }
-  data.data.result = data.data.result.slice(0, Number(limit));
-  return { backend: "bilibili-public-api", raw: JSON.stringify(data, null, 2) };
 }
 
 async function detailBilibili(input) {
@@ -280,23 +294,37 @@ async function detailBilibili(input) {
   if (!/^BV[A-Za-z0-9]+$/.test(String(bvid))) {
     throw new Error("B站详情需要有效 BV 号或包含 BV 号的链接");
   }
+  const failures = [];
   if (commandExists("bili")) {
-    return { backend: "bili-cli", raw: runCommand("bili", ["video", bvid]) };
+    try {
+      return { backend: "bili-cli", raw: runCommand("bili", ["video", bvid]) };
+    } catch (error) {
+      failures.push(`bili-cli: ${error.message}`);
+    }
   }
   if (commandExists("opencli")) {
-    return {
-      backend: "opencli bilibili",
-      raw: runCommand("opencli", ["bilibili", "video", bvid, "-f", "yaml"]),
-    };
+    try {
+      return {
+        backend: "opencli bilibili",
+        raw: runCommand("opencli", ["bilibili", "video", bvid, "-f", "yaml"]),
+      };
+    } catch (error) {
+      failures.push(`OpenCLI: ${error.message}`);
+    }
   }
-  const data = validateBilibiliResponse(
-    await getJson("https://api.bilibili.com/x/web-interface/view?bvid=" + encodeURIComponent(bvid)),
-    "详情",
-  );
-  if (!data.data || typeof data.data !== "object") {
-    throw new Error("B站详情返回结构无效: 缺少 data 对象");
+  try {
+    const data = validateBilibiliResponse(
+      await getJson("https://api.bilibili.com/x/web-interface/view?bvid=" + encodeURIComponent(bvid)),
+      "详情",
+    );
+    if (!data.data || typeof data.data !== "object") {
+      throw new Error("B站详情返回结构无效: 缺少 data 对象");
+    }
+    return { backend: "bilibili-public-api", raw: JSON.stringify(data, null, 2) };
+  } catch (error) {
+    failures.push(`public-api: ${error.message}`);
+    throw new Error(`B站详情全部后端失败：${failures.join("；")}`);
   }
-  return { backend: "bilibili-public-api", raw: JSON.stringify(data, null, 2) };
 }
 
 async function userBilibili(input, options = {}) {
@@ -305,24 +333,33 @@ async function userBilibili(input, options = {}) {
     throw new Error("B站主页必须包含纯数字用户 ID");
   }
   const limit = Math.min(Number(options.limit || 20), 100);
+  const failures = [];
   if (commandExists("bili")) {
-    return { backend: "bili-cli", raw: runCommand("bili", ["user", mid]) };
+    try {
+      return { backend: "bili-cli", raw: runCommand("bili", ["user", mid]) };
+    } catch (error) {
+      failures.push(`bili-cli: ${error.message}`);
+    }
   }
   if (commandExists("yt-dlp")) {
-    return {
-      backend: "yt-dlp BilibiliSpaceVideo",
-      raw: runCommand("yt-dlp", [
-        "--no-update",
-        "--simulate",
-        "--flat-playlist",
-        "--playlist-end",
-        String(limit),
-        "--dump-single-json",
-        `https://space.bilibili.com/${mid}/video`,
-      ]),
-    };
+    try {
+      return {
+        backend: "yt-dlp BilibiliSpaceVideo",
+        raw: runCommand("yt-dlp", [
+          "--no-update",
+          "--simulate",
+          "--flat-playlist",
+          "--playlist-end",
+          String(limit),
+          "--dump-single-json",
+          `https://space.bilibili.com/${mid}/video`,
+        ]),
+      };
+    } catch (error) {
+      failures.push(`yt-dlp: ${error.message}`);
+    }
   }
-  throw new Error(`B站用户作品需要 bili-cli 或 yt-dlp。当前只解析到用户 ID: ${mid}`);
+  throw new Error(`B站用户作品后端不可用：${failures.join("；") || "缺少 bili-cli 或 yt-dlp"}`);
 }
 
 async function search(platform, keyword, options = {}) {
