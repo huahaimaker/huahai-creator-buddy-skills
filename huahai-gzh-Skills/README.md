@@ -1,4 +1,4 @@
-# gzh-Skills · 公众号创作 Skill 集合
+# huahai-gzh-Skills · 公众号创作 Skill 集合
 
 面向微信公众号内容创作的 Skill 集合：从找选题、起标题，到出配图、整篇排版。
 

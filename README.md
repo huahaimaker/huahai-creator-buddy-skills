@@ -30,12 +30,12 @@ Huahai Creator Buddy 是一套给内容创作者、运营和自媒体作者用�
 ## 三大板块
 
 ```text
-gzh-Skills/     公众号   ── 搜爆款 · 起标题 · 出配图 · 整篇排版
-xhs-Skills/     小红书   ── 定位 · 选题 · 标题 · 正文 · 封面 · 图文 · 复盘
-video-Skills/   视频     ── 选题 · 脚本 · 剪辑 · B-roll · 字幕 · 配音配乐 · 封面
+huahai-gzh-Skills/     公众号   ── 搜爆款 · 起标题 · 出配图 · 整篇排版
+huahai-xhs-Skills/     小红书   ── 定位 · 选题 · 标题 · 正文 · 封面 · 图文 · 复盘
+huahai-video-Skills/   视频     ── 选题 · 脚本 · 剪辑 · B-roll · 字幕 · 配音配乐 · 封面
 ```
 
-### 📰 公众号 · `gzh-Skills`
+### 📰 公众号 · `huahai-gzh-Skills`
 
 从赛道情报到配图排版。
 
@@ -52,7 +52,7 @@ video-Skills/   视频     ── 选题 · 脚本 · 剪辑 · B-roll · 字幕
 
 > 三个配图 Skill 都是「用户给内容 → 输出 HTML 或用 Codex/workbuddy 内置出图模型生成图片」。
 
-### 📕 小红书 · `xhs-Skills`
+### 📕 小红书 · `huahai-xhs-Skills`
 
 把起号拆成 10 个环节，一个总控串起来。
 
@@ -69,7 +69,7 @@ video-Skills/   视频     ── 选题 · 脚本 · 剪辑 · B-roll · 字幕
 | `huahai-space-xhs-account-audit` | 账号体检：八维打分、竞品对标、卡点定位 |
 | `huahai-space-xhs-note-analytics` | 笔记复盘：六层漏斗归因、多篇横向找规律 |
 
-### 🎬 视频 · `video-Skills`
+### 🎬 视频 · `huahai-video-Skills`
 
 一条视频从想法到成片的流水线，`huahai-space-video` 总控调度。
 
@@ -144,9 +144,9 @@ git clone https://github.com/huahaimaker/creator-buddy-skills.git
 仓库结构：
 
 ```text
-gzh-Skills/       公众号：搜索分析 + 标题 + 配图
-xhs-Skills/       小红书：起号全流程（10 个 Skill）
-video-Skills/     视频创作：选题→脚本→剪辑→B-roll→字幕→配音→封面
+huahai-gzh-Skills/       公众号：搜索分析 + 标题 + 配图
+huahai-xhs-Skills/       小红书：起号全流程（10 个 Skill）
+huahai-video-Skills/     视频创作：选题→脚本→剪辑→B-roll→字幕→配音→封面
 ```
 
 每个子目录都是一个独立 Skill（一份 `SKILL.md` + 可选脚本/references）。
@@ -174,7 +174,7 @@ video-Skills/     视频创作：选题→脚本→剪辑→B-roll→字幕→�
 也可以手动运行脚本，例如公众号赛道分析：
 
 ```bash
-python3 gzh-Skills/huahai-baokuan-article-analysis/scripts/daily_sector_trends.py \
+python3 huahai-gzh-Skills/huahai-baokuan-article-analysis/scripts/daily_sector_trends.py \
   --sector "AI Coding=Codex,Claude Code,AI编程" --days 7 --output-dir ./reports
 ```
 
@@ -237,7 +237,7 @@ Huahai Creator Buddy 的定位是公开内容研究与创作辅助，不是账�
 
 - [Agent Reach](https://github.com/Panniantong/Agent-Reach)：Agent 操作浏览器/本地环境访问平台内容
 - [xiaohongshu-openclaw-skill](https://github.com/um-why/xiaohongshu-openclaw-skill)：小红书搜索、详情、评论工作流
-- [SpaceZephyr/design-buddy](https://github.com/SpaceZephyr/design-buddy)：`gzh-Skills` 三个配图 Skill 的原型（图表/逻辑图/公众号排版）
+- [SpaceZephyr/design-buddy](https://github.com/SpaceZephyr/design-buddy)：`huahai-gzh-Skills` 三个配图 Skill 的原型（图表/逻辑图/公众号排版）
 - [HyperFrames](https://github.com/heygen-com/hyperframes)：视频 B-roll 的 HTML→确定性 MP4 渲染思路
 - 火山引擎 **Seedance 2.0**（火山方舟 Ark）与 **libtv Agent**：生成式 B-roll 的视频模型通道
 - Pluviobyte/rnskill 与 chengfeng-videocut：口播剪辑「删前保后 / 风险分层」等方法论

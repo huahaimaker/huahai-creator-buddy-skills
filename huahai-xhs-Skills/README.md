@@ -23,7 +23,7 @@
 
 ```bash
 git clone https://github.com/huahaimaker/creator-buddy-skills.git
-cp -r creator-buddy-skills/xhs-Skills/huahai-* ~/.claude/skills/
+cp -r creator-buddy-skills/huahai-xhs-Skills/huahai-* ~/.claude/skills/
 ```
 
 装完在 Claude Code 里说「帮我做小红书」会自动路由到总控，或直接点名环节，比如「帮我看看这条笔记数据」。

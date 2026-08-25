@@ -15,7 +15,7 @@ SVT_HOME="$(
     "$HOME/.codex/skills/huahai-space-video-transcript" \
     "$HOME/.agents/skills/huahai-space-video-transcript" \
     "$HOME/.claude/skills/huahai-space-video-transcript" \
-    "$(pwd)/video-Skills/huahai-space-video-transcript" \
+    "$(pwd)/huahai-video-Skills/huahai-space-video-transcript" \
     "$(pwd)/huahai-space-video-transcript"; do
     [ -f "$dir/SKILL.md" ] && printf '%s\n' "$dir" && break
   done
