@@ -4,6 +4,7 @@ const constants = require("../config/constants");
 const log = require("../utils/log");
 const utils = require("../utils/utils");
 const { parseArgs, pick } = require("../utils/args");
+const cli = require("../utils/cli");
 const platformClient = require("../platforms/agentReach");
 
 function printHelp() {
@@ -36,22 +37,28 @@ function printHelp() {
 async function main() {
   const startTime = Date.now();
   const parsed = parseArgs(process.argv.slice(2));
-  if (parsed["--help"] || parsed["-h"] || process.argv.length <= 2) {
+  if (parsed["--help"] || parsed["-h"]) {
     printHelp();
     return;
   }
 
-  const platform = pick(parsed, ["--platform", "-p"], "xiaohongshu");
-  const keyword = pick(parsed, ["--keyword", "-k"], parsed._[0] || "");
-  const type = Number(pick(parsed, ["--type", "-t"], 0));
-  const sort = Number(pick(parsed, ["--sort", "-s"], 0));
-  const time = Number(pick(parsed, ["--time", "-i"], 0));
-  const limit = Number(pick(parsed, ["--limit", "-l"], 20));
-  const output = pick(parsed, ["--output", "-o"], "json");
-
-  if (!keyword) {
-    utils.printError("未提供关键词");
-    printHelp();
+  let platform;
+  let keyword;
+  let type;
+  let sort;
+  let time;
+  let limit;
+  let output;
+  try {
+    platform = cli.platform(pick(parsed, ["--platform", "-p"], "xiaohongshu"));
+    keyword = cli.nonEmpty(pick(parsed, ["--keyword", "-k"], parsed._[0] || ""), "关键词", 100);
+    type = cli.integer(pick(parsed, ["--type", "-t"], 0), "内容类型", 0, 2);
+    sort = cli.integer(pick(parsed, ["--sort", "-s"], 0), "排序规则", 0, 4);
+    time = cli.integer(pick(parsed, ["--time", "-i"], 0), "时间范围", 0, 3);
+    limit = cli.integer(pick(parsed, ["--limit", "-l"], 20), "搜索数量", 1, 100);
+    output = cli.choice(pick(parsed, ["--output", "-o"], "json"), "输出格式", ["json", "raw"]);
+  } catch (error) {
+    cli.writeError(error, { operation: "search" });
     return;
   }
 
@@ -73,7 +80,7 @@ async function main() {
       backend: result.backend,
       keyword,
       limit,
-      timestamp: new Date().toLocaleString(),
+      timestamp: new Date().toISOString(),
       skill_metadata: {
         skill_version: constants.VERSION,
         runtime_version: process.versions.node,
@@ -82,35 +89,17 @@ async function main() {
       raw: result.raw,
     };
 
-    if (output === "raw") {
-      console.log(result.raw);
-    } else {
-      console.log(JSON.stringify(finalOutput, null, 2));
-    }
+    cli.writeSuccess(output, finalOutput, result.raw);
 
     await log.taskWrite(
       `${startTime}_${platform}_${keyword}_${limit}_search.json`,
       JSON.stringify(finalOutput, null, 2),
     );
   } catch (error) {
-    console.log(
-      JSON.stringify(
-        {
-          status: "error",
-          platform,
-          keyword,
-          message: error.message,
-          timestamp: new Date().toLocaleString(),
-          results: [],
-        },
-        null,
-        2,
-      ),
-    );
+    cli.writeError(error, { operation: "search", platform, keyword });
   }
 }
 
 main().catch((error) => {
-  utils.printError(error.message || error);
-  process.exit(1);
+  cli.writeError(error, { operation: "search" });
 });

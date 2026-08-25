@@ -4,6 +4,7 @@ const constants = require("../config/constants");
 const log = require("../utils/log");
 const utils = require("../utils/utils");
 const { parseArgs, pick } = require("../utils/args");
+const cli = require("../utils/cli");
 const platformClient = require("../platforms/agentReach");
 
 function printHelp() {
@@ -31,19 +32,22 @@ function printHelp() {
 async function main() {
   const startTime = Date.now();
   const parsed = parseArgs(process.argv.slice(2));
-  if (parsed["--help"] || parsed["-h"] || process.argv.length <= 2) {
+  if (parsed["--help"] || parsed["-h"]) {
     printHelp();
     return;
   }
 
-  const platform = pick(parsed, ["--platform", "-p"], "xiaohongshu");
-  const url = pick(parsed, ["--url", "-u"], parsed._[0] || "");
-  const limit = Number(pick(parsed, ["--limit", "-l"], 0));
-  const output = pick(parsed, ["--output", "-o"], "json");
-
-  if (!url) {
-    utils.printError("未提供链接或 ID");
-    printHelp();
+  let platform;
+  let url;
+  let limit;
+  let output;
+  try {
+    platform = cli.platform(pick(parsed, ["--platform", "-p"], "xiaohongshu"));
+    url = cli.nonEmpty(pick(parsed, ["--url", "-u"], parsed._[0] || ""), "链接或 ID");
+    limit = cli.integer(pick(parsed, ["--limit", "-l"], 0), "评论数量", 0, 1000);
+    output = cli.choice(pick(parsed, ["--output", "-o"], "json"), "输出格式", ["json", "raw"]);
+  } catch (error) {
+    cli.writeError(error, { operation: "detail" });
     return;
   }
 
@@ -60,7 +64,7 @@ async function main() {
       backend: result.backend,
       url,
       limit,
-      timestamp: new Date().toLocaleString(),
+      timestamp: new Date().toISOString(),
       skill_metadata: {
         skill_version: constants.VERSION,
         runtime_version: process.versions.node,
@@ -69,35 +73,17 @@ async function main() {
       raw: result.raw,
     };
 
-    if (output === "raw") {
-      console.log(result.raw);
-    } else {
-      console.log(JSON.stringify(finalOutput, null, 2));
-    }
+    cli.writeSuccess(output, finalOutput, result.raw);
 
     await log.taskWrite(
       `${startTime}_${platform}_detail.json`,
       JSON.stringify(finalOutput, null, 2),
     );
   } catch (error) {
-    console.log(
-      JSON.stringify(
-        {
-          status: "error",
-          platform,
-          url,
-          message: error.message,
-          timestamp: new Date().toLocaleString(),
-          results: [],
-        },
-        null,
-        2,
-      ),
-    );
+    cli.writeError(error, { operation: "detail", platform, url });
   }
 }
 
 main().catch((error) => {
-  utils.printError(error.message || error);
-  process.exit(1);
+  cli.writeError(error, { operation: "detail" });
 });

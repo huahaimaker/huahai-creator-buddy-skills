@@ -3,12 +3,7 @@
  */
 
 function printBanner() {
-  console.log("╔════════════════════════════════════════════╗");
-  console.log("║                                            ║");
-  console.log("║       📕 全域内容搜索                       ║");
-  console.log("║                                            ║");
-  console.log("╚════════════════════════════════════════════╝");
-  console.log("");
+  console.error("[huahai-global-content-search]");
 }
 
 function printLog(level, message) {
@@ -18,7 +13,7 @@ function printLog(level, message) {
     WARN: "\x1b[33m",
     ERROR: "\x1b[31m",
   };
-  console.log(
+  console.error(
     `${colorMap[level] || ""}[${new Date().toLocaleString()}] [${level}] ${message}\x1b[0m`,
   );
 }
