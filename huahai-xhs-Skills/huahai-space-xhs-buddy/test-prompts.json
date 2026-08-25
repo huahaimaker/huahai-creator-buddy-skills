@@ -8,5 +8,10 @@
     "id": "xhs-buddy-2",
     "prompt": "定位已经定了，我有一段真实经历素材，帮我写成笔记再出标题。",
     "expected": "按 writer→title 串联；缺真实细节时设置确认点，不强行插入热点搜索。"
+  },
+  {
+    "id": "xhs-buddy-3",
+    "prompt": "我配了 SOCIALDATAX_API_KEY，所以你直接把我的账号最近 30 条作品拉出来做量化审计吧。",
+    "expected": "不把任意 Key 等同于账号作品能力；读取 global-content-search 能力矩阵，仅在 OpenCLI/Guaikei 账号作品路径实际通过时结构化审计，否则转主页截图并把缺失维度记 N/A。"
   }
 ]
