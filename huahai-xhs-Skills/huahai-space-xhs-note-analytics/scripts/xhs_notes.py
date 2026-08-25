@@ -44,6 +44,7 @@ ALIASES = {
 RATE_COLS = {"ctr", "finish", "search_pct", "rec_pct"}
 TEXT_COLS = {"title", "type", "window"}
 NONNEGATIVE_COLS = {"impression", "read", "like", "collect", "comment", "share", "follow", "duration"}
+RATE_NAME_MARKERS = ("率", "占比", "ratio", "rate", "pct", "百分比")
 
 
 def read_any(path, nrows=None):
@@ -82,6 +83,9 @@ def map_columns(cols):
             if c in used:
                 continue
             nc = norm(c)
+            # 绝对量不能从“点赞率/收藏占比”等比率列模糊命中，否则会制造假互动率。
+            if canon in NONNEGATIVE_COLS and any(marker in nc for marker in RATE_NAME_MARKERS):
+                continue
             if any(norm(n) in nc for n in names):
                 mapping[canon] = c
                 used.add(c)
@@ -103,10 +107,19 @@ def to_num(s):
 
 
 def normalize_rate(s):
-    """比率列单位自适应：中位数 > 1 视为百分数形式，除以 100 统一成小数。"""
+    """统一比率单位；同列裸数字同时出现小数和百分数形式时拒绝猜测。"""
     v = to_num(s)
-    m = v.dropna().median()
-    return v / 100 if pd.notna(m) and m > 1 else v
+    raw = s.astype("string").str.strip()
+    explicit_pct = raw.str.contains("%", regex=False, na=False)
+    bare = v.where(~explicit_pct)
+    valid_bare = bare[(bare >= 0) & bare.notna()]
+    has_fraction = bool(valid_bare.le(1).any())
+    has_percent_number = bool(valid_bare.gt(1).any())
+    if has_fraction and has_percent_number:
+        return pd.Series(float("nan"), index=v.index, dtype="float64"), True
+    if has_percent_number:
+        v = v.mask(~explicit_pct, v / 100)
+    return v.astype(float), False
 
 
 def load(path):
@@ -119,7 +132,8 @@ def load(path):
         elif canon == "publish_at":
             out[canon] = pd.to_datetime(df[col], errors="coerce")
         elif canon in RATE_COLS:
-            out[canon] = normalize_rate(df[col])
+            out[canon], unit_conflict = normalize_rate(df[col])
+            out[f"{canon}_unit_conflict"] = unit_conflict
             if canon == "ctr":
                 out["ctr_raw"] = df[col]
         else:
@@ -224,6 +238,10 @@ def quality_report(d, cols=None):
         conflicts = int(d["ctr_conflict"].fillna(False).sum())
         if conflicts:
             lines.append(f"  平台点击率与阅读/曝光计算值冲突: {conflicts} 条 —— 已置为 NA，需确认口径")
+    for c in sorted(col for col in d.columns if col.endswith("_unit_conflict")):
+        if bool(d[c].fillna(False).any()):
+            metric = c.removesuffix("_unit_conflict")
+            lines.append(f"  比率单位冲突: {metric} 同时出现 0.05 与 5 一类裸数字 —— 整列已置为 NA，需确认单位")
     if "mixed_time_window" in d and d["mixed_time_window"].any():
         values = ", ".join(sorted(d["window"].dropna().astype(str).unique())[:6])
         lines.append(f"  混合时间口径: {values} —— 全部比率已置为 NA，不得横向比较")
