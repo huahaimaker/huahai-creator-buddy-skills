@@ -75,7 +75,7 @@ metadata:
 - 小红书账号作品不是“任意 Key”都可用，以 global search 当前能力矩阵为准；
 - B站搜索/详情可用公开 API，账号作品另需对应后端；
 - 抖音只在用户显式配置 `DOUYIN_COMMAND` 时可用；
-- 本地 CSV/JSON、标题、正文和定位不依赖平台后端；
+- 本地 CSV/Excel、标题、正文和定位不依赖平台后端；
 - 公众号 HTML 有固定本地渲染器，但公众号编辑器实贴必须单独验证。
 
 成功状态至少包含：退出码正确、机器输出可解析、`status` 与后端明确、结果非空或明确的真实空集、查询参数与用户输入一致。
@@ -89,7 +89,7 @@ inputs:
   missing: []
   sources: []
 data_status:
-  state: verified|partial|unavailable
+  state: verified-live|verified-fixture|partial|empty|unavailable|structural-only|untested
   backend: null
   retrieved_at: null
   time_window: null
@@ -101,7 +101,7 @@ next_step:
   reason: 选择理由
 ```
 
-跨步骤必须保留原始链接、字段、时间窗、样本量、推广状态、事实台账和缺口。搜索结果中的推断不能在写作步骤自动变成第一人称经历。
+跨步骤必须保留原始链接、字段、时间窗、样本量、推广状态、事实台账和缺口。需要 `xsec_token` 的搜索结果 URL 只在当前本地只读链路中原样传递；公开报告、日志、README 和对外消息必须脱敏。搜索结果中的推断不能在写作步骤自动变成第一人称经历。
 
 ## 5. 推荐工作流
 
@@ -134,7 +134,8 @@ positioning → 5–10 篇单变量计划 → 用户发布
 
 每次交付先说结果，再说明证据等级：
 
-- `verified`：真实请求或确定性 fixture 已通过目标合同；
+- `verified-live`：当前真实请求已通过目标合同；
+- `verified-fixture`：确定性 fixture 已通过输入、错误与空集合同；
 - `partial`：部分后端/字段通过，其余缺失；
 - `empty`：查询成功但真实返回空集；
 - `unavailable`：缺后端、凭证或权限；
@@ -147,7 +148,7 @@ positioning → 5–10 篇单变量计划 → 用户发布
 
 - 只读公开数据和用户主动提供的数据。
 - 不发布、点赞、评论、关注、私信、刷量、养号或绕过风控。
-- 不回显、记录或提交 Key、Cookie、登录态和带敏感 token 的链接。
+- Key、Cookie 和登录态永不回显、记录或提交；带 `xsec_token` 的原始结果 URL 仅限当前本地只读步骤传递，不进入公开报告、日志或版本库。
 - 不用无关结果补满空集，不把模糊数恢复成精确数。
 - 不把热点、评分、标题模式或单篇表现写成因果和增长保证。
 - 不虚构身份、经历、数字、产品效果、引用和平台规则。

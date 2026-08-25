@@ -65,7 +65,7 @@ node <skill_dir>/src/xiaohongshu/detail-cli.js \
   --output json
 ```
 
-小红书 MCP 详情必须使用搜索结果返回的完整 URL，并保留 `xsec_token`。
+小红书 MCP 详情必须使用搜索结果返回的完整 URL，并在当前本地只读步骤保留 `xsec_token`。公开报告、日志和对外消息必须对 token 脱敏。
 
 ### 账号作品
 

@@ -13,5 +13,10 @@
     "id": "xhs-buddy-3",
     "prompt": "我配了 SOCIALDATAX_API_KEY，所以你直接把我的账号最近 30 条作品拉出来做量化审计吧。",
     "expected": "不把任意 Key 等同于账号作品能力；读取 global-content-search 能力矩阵，仅在 OpenCLI/Guaikei 账号作品路径实际通过时结构化审计，否则转主页截图并把缺失维度记 N/A。"
+  },
+  {
+    "id": "xhs-buddy-4",
+    "prompt": "我有小红书后台 Excel，没配任何平台 Key，能不能直接做复盘？",
+    "expected": "可以路由 note analytics 处理本地 CSV/Excel；标 verified-fixture 或本地数据状态，不把本地解析冒充平台实时请求。"
   }
 ]

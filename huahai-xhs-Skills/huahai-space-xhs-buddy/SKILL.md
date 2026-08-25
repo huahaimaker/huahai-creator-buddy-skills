@@ -41,7 +41,7 @@ metadata:
 | positioning | 用户访谈可用 | 可选用已验证热点样本 | 假设、事实和实验计划分开 |
 | writer | 素材足够时可用 | 不需要 | 交付状态 + fact refs |
 | title | 正文/素材足够时可用 | 不需要 | 每条标题 claim 可回指事实 |
-| note analytics | 本地 CSV/JSON 可用 | 不需要远端 | 字段口径、有效样本量、状态明确 |
+| note analytics | 本地 CSV/Excel 可用 | 不需要远端 | 字段口径、有效样本量、状态明确 |
 | hotspot | 本地输入可比较 | Redfox Key 才能跑当前实时抓取 | `status`、来源、时间、非空结果 |
 | account audit | 截图路径可用 | 小红书账号作品仅在 OpenCLI/Guaikei 对应能力可用时执行 | 证据矩阵，缺失维度 N/A |
 
@@ -86,7 +86,7 @@ inputs:
   missing: []
   sources: []
 data_status:
-  state: verified|partial|unavailable
+  state: verified-live|verified-fixture|partial|empty|unavailable|structural-only|untested
   backend: null
   retrieved_at: null
   time_window: null
