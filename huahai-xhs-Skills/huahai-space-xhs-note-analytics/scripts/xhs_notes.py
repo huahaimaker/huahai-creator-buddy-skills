@@ -224,13 +224,13 @@ def quality_report(d, cols=None):
     if "impression" in d:
         low = int((d["impression"] < 1000).sum())
         if low:
-            lines.append(f"  曝光<1000: {low} 条 —— 这些笔记的比率是噪声，慎用")
+            lines.append(f"  曝光<1000: {low} 条 —— 低样本提醒，需结合绝对数和历史基准；不是平台阈值")
     if "publish_at" in d and d["publish_at"].notna().any():
         lo, hi = d["publish_at"].min(), d["publish_at"].max()
         lines.append(f"  时间范围: {lo:%Y-%m-%d} ~ {hi:%Y-%m-%d}")
         recent = int((pd.Timestamp.now() - d["publish_at"] < pd.Timedelta(days=7)).sum())
         if recent:
-            lines.append(f"  发布<7天: {recent} 条 —— 数据未跑满，不要与老笔记直接比较")
+            lines.append(f"  发布<7天: {recent} 条 —— 默认成熟度提醒；确认时间窗后再与老笔记比较")
     if n < 5:
         lines.append("  ⚠ 样本 <5 篇：只能逐篇诊断，不得给出任何规律性结论")
     elif n < 15:
