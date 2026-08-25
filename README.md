@@ -1,213 +1,187 @@
-<h1 align="center">Huahai Creator Buddy</h1>
+# Huahai Creator Buddy Skills
 
-<p align="center"><code>huahai-creator-buddy.skill</code></p>
+一套面向公众号与小红书创作者的 Agent Skills：先核验输入和数据能力，再做搜索、分析、定位、写作、标题、排版与复盘。
 
-<p align="center"><em>「从一个选题，到一篇能发的成品」</em></p>
+作者：**花海**｜VX：**SeaMinnie**
 
-<p align="center">
-  <img alt="License MIT" src="https://img.shields.io/badge/License-MIT-c8a500?style=for-the-badge">
-  <img alt="Agent Skills Standard" src="https://img.shields.io/badge/Agent%20Skills-Standard-5aa524?style=for-the-badge">
-  <img alt="skills.sh Compatible" src="https://img.shields.io/badge/skills.sh-Compatible-1888c8?style=for-the-badge">
-  <img alt="Runtime" src="https://img.shields.io/badge/Runtime-Claude%20Code%20%C2%B7%20Codex%20%C2%B7%20Cursor%20%C2%B7%20OpenClaw%20%C2%B7%20Hermes-7b2bd9?style=for-the-badge">
-</p>
+仓库：`huahaimaker/huahai-creator-buddy-skills`
 
-<p align="center">
-  作者：<strong>花海</strong> ｜ VX：<strong>SeaMinnie</strong>
-</p>
+当前共 **14 个 Skill**：1 个根路由 + 13 个专项 Skill。视频制作、自动配图和 `huahai-cat-illustrations` 已移除，不在当前仓库能力范围内。
 
-Huahai Creator Buddy 是一套给内容创作者、运营和自媒体作者用的**内容研究与写作 Skill 工具箱**。
+## 这版解决什么
 
-它聚焦**公众号与小红书**：从平台情报（搜热点、挖爆款、看评论、拆竞品），到内容产出（定方向、起标题、写正文、做排版与复盘）。
+- 数据成功必须有正确退出码、可解析输出、明确后端和非空结果；
+- 空结果、缺 Key、业务码错误和后端缺失不会伪装成成功；
+- 标题与正文中的数字、身份、价格、经历和效果必须回指用户事实；
+- 账号截图看不到的维度记 `N/A`，不拼凑虚假 100 分；
+- 小红书定位改为 5–10 篇小样本实验，不承诺固定涨粉结果；
+- 公众号排版有固定零依赖 CLI，可重复生成同一份内联样式 HTML；
+- 所有验证结果区分 fixture、真实联网、本地预览和公众号实贴。
 
-基于开放的 Agent Skills 协议，可在 Claude Code、Codex、Cursor、OpenClaw、Hermes Agent、CodeBuddy、Workbuddy、Gemini CLI、OpenCode 等兼容 runtime 中运行。
-
-不是让 AI 凭感觉给你编选题，也不是给你一个「一键起号」按钮。
-
-而是先把平台上的真实内容和数据拉回来，再帮你一步步做成能发的东西——**内容永远是你的**。
-
----
-
-## 两大板块
+## 目录
 
 ```text
-huahai-gzh-Skills/     公众号   ── 搜爆款 · 起标题 · 整篇排版
-huahai-xhs-Skills/     小红书   ── 定位 · 选题 · 标题 · 正文 · 诊断 · 复盘
+.
+├── SKILL.md                         # 根路由
+├── test-prompts.json                # 根路由回归集
+├── huahai-gzh-Skills/               # 公众号与跨平台：6 个
+├── huahai-xhs-Skills/               # 小红书生产与复盘：7 个
+└── scripts/validate_repository.py   # 仓库级验证
 ```
 
-### 📰 公众号 · `huahai-gzh-Skills`
+## 公众号与跨平台
 
-从赛道情报到正文排版。
+| Skill | 用途 | 数据/运行边界 |
+| --- | --- | --- |
+| `huahai-baokuan-article-analysis` | 多关键词公众号赛道聚合、相对排序 | Redfox；验证 TLS、schema、相关性及 partial/empty/error |
+| `huahai-gzh-explosive-content-detector` | 单关键词公众号高传播内容 | Redfox；无关结果过滤，不用零相关兜底 |
+| `huahai-global-content-search` | 小红书/B站/抖音搜索、详情、账号作品 | 各操作能力不同，见子 Skill 能力矩阵 |
+| `huahai-xhs-hotnotes` | 小红书近期热门笔记 | 需要 `REDFOX_API_KEY`；返回快照，不是平台实时值 |
+| `huahai-baokuan-title-generator` | 科技/AI 公众号标题 | 事实和来源台账，不承诺“10 万+” |
+| `huahai-space-wechat-layout` | Markdown → 可复制公众号 HTML | 本地固定渲染器；公众号后台实贴需单独验证 |
 
-| Skill | 干什么 |
-|---|---|
-| `huahai-baokuan-article-analysis` | 按赛道/关键词抓公众号爆款，做数据洞察 |
-| `huahai-gzh-explosive-content-detector` | 每日爆款收录（低粉高阅读、数据增长中） |
-| `huahai-global-content-search` | 全域内容搜索（小红书/B站/抖音关键词、详情、评论） |
-| `huahai-xhs-hotnotes` | 小红书热门笔记搜索，找选题灵感 |
-| `huahai-baokuan-title-generator` | 科技/AI 领域 10万+ 爆款标题生成、评分、A/B |
-| `huahai-space-wechat-layout` | **排版**：整篇文章 → 公众号 HTML（一键复制） |
+## 小红书
 
-### 📕 小红书 · `huahai-xhs-Skills`
-
-把起号拆成 7 个环节，一个总控串起来。
-
-| Skill | 干什么 |
-|---|---|
-| `huahai-space-xhs-buddy` | **总控台**：判断你卡在哪一环，路由并串工作流 |
-| `huahai-space-xhs-positioning` | 起号定位：赛道、定位句、人设、内容支柱、冷启动 |
-| `huahai-space-xhs-hotspot` | 热点选题：拉高互动笔记、判趋势、爆款共性 |
-| `huahai-space-xhs-title` | 爆款标题：15 种小红书方法批量出候选、评分、合规 |
-| `huahai-space-xhs-writer` | 笔记正文：7 种笔记类型、标签策略、发布前 14 项体检 |
-| `huahai-space-xhs-account-audit` | 账号体检：八维打分、竞品对标、卡点定位 |
-| `huahai-space-xhs-note-analytics` | 笔记复盘：六层漏斗归因、多篇横向找规律 |
-
-## 使用示例
-
-**先做情报**——把平台语境还原出来，而不是泛泛「帮我想 10 个选题」：
-
-```text
-用户  ❯ 帮我看看最近 Codex 在小红书上有什么爆款
-
-助手  ❯ 已搜索小红书热门笔记，近 7 天 39 条筛出 10 条高相关：
-        1. 低成本玩转 Claude Code：6w+ 互动
-        2. Codex 写文献综述：1w+ 互动
-        3. 5 分钟安装 Codex：1w+ 互动
-        结论：小红书用户不关心「模型多强」，更关心怎么装、怎么省钱、
-        怎么避坑、普通人能不能用、能不能马上解决具体问题。
-```
-
-**再做成品**——从选题继续做到能发的东西：
-
-```text
-用户  ❯ 把这个选题写成一篇小红书笔记，再给 10 个标题候选
-
-助手  ❯ 已按干货教程结构完成正文，并把缺少真实经历的位置标出
-        → 基于正文生成 10 个标题候选 → 完成合规检查与 A/B 建议
-```
-
----
+| Skill | 用途 | 核心输出 |
+| --- | --- | --- |
+| `huahai-space-xhs-buddy` | 多步骤总路由 | 能力预检、跨步骤数据包 |
+| `huahai-space-xhs-positioning` | 从零定位或重新定位 | 候选定位、外部证据状态、5–10 篇实验 |
+| `huahai-space-xhs-hotspot` | 热点样本和选题验证 | 原始链接、精确/模糊指标分离、数据状态 |
+| `huahai-space-xhs-writer` | 小红书正文 | 事实台账、publishable/待确认/scaffold 状态 |
+| `huahai-space-xhs-title` | 小红书标题 | 标题 claim → fact_refs、长度口径和风险 |
+| `huahai-space-xhs-account-audit` | 主页与账号审计 | 证据矩阵、覆盖率、N/A 维度 |
+| `huahai-space-xhs-note-analytics` | 后台 CSV/Excel/截图复盘 | 字段口径、有效样本量、中位数和单变量实验 |
 
 ## 安装
 
-Huahai Creator Buddy 基于开放的 Agent Skills 协议，可在任何 skills-compatible 的 AI agent runtime 中运行。
-
-### 方式一：一行命令（推荐，跨 runtime）
-
-打开你正在用的 agent，告诉它：
-
-```text
-帮我安装这个 skill：https://github.com/huahaimaker/huahai-creator-buddy-skills
-```
-
-或者用通用 CLI 安装器（vercel-labs/skills，支持多 runtime）：
+安装全部 14 个 Skill：
 
 ```bash
-npx skills add huahaimaker/huahai-creator-buddy-skills
+npx skills add huahaimaker/huahai-creator-buddy-skills \
+  --full-depth --skill '*' -y
 ```
 
-它会自动识别当前 runtime 并放到正确目录。需要指定时加 `-a codex` / `-a claude-code` / `-a cursor`。
+仓库根目录本身也是一个 Skill，因此必须加 `--full-depth` 才会继续发现 13 个嵌套 Skill。只想安装总路由时可以省略它。
 
-### 方式二：手动安装
+安装前只列出可发现项：
 
-克隆仓库，把需要的 skill 目录复制到你的 runtime skills 目录：
+```bash
+npx skills add huahaimaker/huahai-creator-buddy-skills \
+  --list --full-depth
+```
+
+或手动克隆：
 
 ```bash
 git clone https://github.com/huahaimaker/huahai-creator-buddy-skills.git
 ```
 
-仓库结构：
+每个子目录都是独立 Skill。只需要某项能力时，可用 `--skill <name>` 指定安装。
 
-```text
-huahai-gzh-Skills/       公众号：搜索分析 + 标题 + 整篇排版（6 个 Skill）
-huahai-xhs-Skills/       小红书：定位→选题→正文→标题→诊断复盘（7 个 Skill）
+## 先验证仓库
+
+```bash
+python3 scripts/validate_repository.py
 ```
 
-每个子目录都是一个独立 Skill（一份 `SKILL.md` + 可选脚本/references）。
+验证器会检查：
 
-### 方式三：作为参考资料使用
+- 14 个 `SKILL.md` 的 frontmatter、`huahai-` 前缀和唯一名称；
+- 14 份 `test-prompts.json` 的结构与唯一用例 id；
+- 所有 JSON 可解析；
+- 所有 Python 可编译、所有 JavaScript 通过 `node --check`；
+- 根路由指向 13 个真实子 Skill；
+- 已删除模块和旧 Skill 引用没有残留；
+- 全局搜索 CLI、笔记复盘、热点数据和公众号 HTML 的确定性运行回归。
 
-即使 runtime 不支持自动加载，也可以直接打开对应目录的 `SKILL.md`，把内容粘贴进对话。
+这一步是结构和 fixture 验证，不会调用付费 API，也不代表所有远端后端当前可用。
 
----
+## 常用入口
 
-## 使用
+### B站搜索
 
-装好后，直接用自然语言告诉 agent：
-
-```text
-帮我搜一下小红书最近 Codex 的热门笔记
-查一下公众号里 AI Agent 相关爆款
-这篇文章帮我起 10 个爆款标题，标好方法和风险
-把这篇文章排成可以复制到公众号编辑器的 HTML
-帮我给小红书账号做一次定位和内容支柱规划
-看看这条笔记为什么没流量，并给下一篇的改进动作
+```bash
+node huahai-gzh-Skills/huahai-global-content-search/src/xiaohongshu/search-cli.js \
+  --platform bilibili \
+  --keyword 'AI 编程' \
+  --limit 10 \
+  --output json
 ```
 
-也可以手动运行脚本，例如公众号赛道分析：
+成功时 stdout 是单一 JSON、退出 0；参数错误退出 2；网络、后端、HTTP 或业务错误退出 1。
+
+### 公众号赛道分析
 
 ```bash
 python3 huahai-gzh-Skills/huahai-baokuan-article-analysis/scripts/daily_sector_trends.py \
-  --sector "AI Coding=Codex,Claude Code,AI编程" --days 7 --output-dir ./reports
+  --sector 'AI Coding=Codex,Claude Code,AI编程' \
+  --days 7 \
+  --output-dir ./reports
 ```
 
----
+需要对应数据凭证。输出会区分 success、partial、empty 和 error。
 
-## 工作原理
+### 小红书后台数据复盘
 
-Huahai Creator Buddy 不是一个单一爬虫，而是一组内容创作 Skill，分两半：
+```bash
+python3 huahai-xhs-Skills/huahai-space-xhs-note-analytics/scripts/xhs_notes.py \
+  probe '/absolute/path/notes.csv'
+```
 
-| 半 | 做什么 |
-|---|---|
-| **情报** | 通过 Redfox、Agent Reach、OpenCLI、bili-cli、公开 API 等读取公开内容 → 去重排序评分 → 出结构化报告 → 让 Agent 提炼选题方向 |
-| **产出** | 把选题继续做成标题、正文和公众号排版，并用账号诊断与笔记复盘持续修正方向 |
+先探查字段和时间窗，再执行 `metrics` 或 `group`。缺失、负数、混合时间窗和冲突比率不会进入统计。
 
-其中 `huahai-global-content-search` 的访问顺序是 Agent Reach 优先、Guaikei API 兜底（小红书需 `GUAIKEI_API_TOKEN`；B站走 `bili-cli`/公开 API；抖音预留 `DOUYIN_COMMAND` 只读 CLI）。
+### 公众号 HTML
 
----
+```bash
+python3 huahai-gzh-Skills/huahai-space-wechat-layout/scripts/render_wechat_layout.py \
+  --input '/absolute/path/article.md' \
+  --output '/absolute/path/wechat-layout-output/index.html' \
+  --style auto \
+  --frontmatter auto
+```
 
-## 适合谁
+成功 JSON 会返回实际风格、来源字节数、区块数、frontmatter 状态和文章 SHA-256。普通正文若恰好以 `--- / key: value / ---` 开头，可用 `--frontmatter keep` 明确保留。打开 `index.html` 后点击“复制 HTML”。
 
-- **公众号作者**：找近期爆款、判断方向、起标题、整篇排版
-- **小红书运营**：定位、选题、写笔记、账号体检与复盘
-- **自媒体 / 增长团队**：跨平台监控内容趋势、拆爆款、还原用户语境
+## 凭证与后端
 
----
+| 配置 | 用途 |
+| --- | --- |
+| `REDFOX_API_KEY` | Redfox 公众号/小红书数据路径 |
+| `GUAIKEI_API_TOKEN` | 部分小红书搜索、详情或账号作品兜底 |
+| `DOUYIN_COMMAND` | 用户自行提供的抖音只读 CLI |
+| OpenCLI / 小红书 MCP / `xhs-cli` | 条件可用的小红书搜索与详情 |
+| `bili` / `yt-dlp` | B站账号作品；搜索和详情另有公开 API |
 
-## 风控与安全性说明
+环境变量存在只代表“可能已配置”。实际成功仍以退出码、`status`、`backend`、业务码和非空结果为准。
 
-Huahai Creator Buddy 的定位是公开内容研究与创作辅助，不是账号自动化工具。
+不要提交 `.env`、Key、Cookie、登录态或带敏感 token 的链接。小红书搜索结果中的完整 `xsec_token` URL 仅在当前本地只读详情链路中传递；写入公开报告、日志和仓库前必须脱敏。
 
-- **只读公开数据**：默认只读公开页面、公开 API、只读 CLI 或你本机已授权的只读工具。
-- **不做账号动作**：不发帖、点赞、收藏、评论、关注、私信、批量加好友。
-- **不绕过限制**：不绕登录、验证码、权限校验、付费墙、平台风控或反爬。
-- **凭据不入库**：`GUAIKEI_API_TOKEN`、各类 API Key、Cookie、登录态、`.env`、带 token 的链接都不提交到仓库。
-- **本地优先**：需要登录态的访问只在本机工具链完成。
-- **低频使用**：评论、详情页、批量搜索易触发限制，建议小批量、低并发、按需采样。
-- **分享前脱敏**：公开报告前移除 `xsec_token`、Cookie、邮箱、手机号、后台链接。
+## 数据可信度
 
----
+交付中使用以下状态：
 
-## 诚实边界
+| 状态 | 含义 |
+| --- | --- |
+| `verified-live` | 当前真实请求返回成功数据 |
+| `verified-local` | 用户真实本地文件成功解析且口径已检查 |
+| `verified-fixture` | 确定性 fixture 通过输入/错误/空集合同 |
+| `structural-only` | 仅语法、文件、构建或 HTML 结构通过 |
+| `partial` | 部分字段或后端通过 |
+| `empty` | 请求成功但真实返回空集 |
+| `unavailable` | 缺后端、凭证、权限或网络 |
+| `untested` | 尚未执行 |
 
-每个创作工具都应该说明自己做不到什么。
+当前版本的具体审计证据见 [VALIDATION.md](./VALIDATION.md)。远端服务会变化，安装后应重新运行对应 smoke test。
 
-- **不是实时后台数据**：平台数据来自公开页面、第三方数据源或入库快照。
-- **不替你做账号运营**：不做发帖等写操作，不承诺绕过验证码或风控。
-- **热门不等于适合你**：爆款只说明平台上什么在传播，不能替代你的定位判断。
-- **小红书受 `xsec_token` 影响**：详情页通常需用搜索结果返回的完整 URL。
-- **抖音当前是扩展入口**：仓库只提供接口，需你接入本地只读 CLI。
+## 使用原则
 
-一个不告诉你边界在哪的创作工具，不值得信任。
-
----
-
-## 参考与致谢
-
-平台访问与内容创作方法论参考了以下项目：
-
-- [Agent Reach](https://github.com/Panniantong/Agent-Reach)：Agent 操作浏览器/本地环境访问平台内容
-- [xiaohongshu-openclaw-skill](https://github.com/um-why/xiaohongshu-openclaw-skill)：小红书搜索、详情、评论工作流
-- [SpaceZephyr/design-buddy](https://github.com/SpaceZephyr/design-buddy)：公众号 HTML 排版能力的原型
+- 只读公开数据和用户主动提供的数据；
+- 不发布、点赞、评论、关注、私信、刷量、养号或绕过风控；
+- 不用无关结果补满空集；
+- 不把公开互动数当内容质量或账号适配度；
+- 不把标题评分、热点样本或小样本相关性写成增长保证；
+- 不虚构身份、经历、数据、引用、功效和平台规则；
+- 不把本地 HTML 预览说成公众号编辑器实贴通过。
 
 ## 许可证
 
