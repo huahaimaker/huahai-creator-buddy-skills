@@ -68,6 +68,16 @@ def main() -> None:
     short_fixture["articles"][0]["shareInfoLink"] = "https://xhslink.com/a?xsec_token=short-secret"
     short_html = MODULE.format_as_html(short_fixture)
     assert "short-secret" not in short_html and "原始链接仅保留在本地 JSON" in short_html
+    for hidden in (
+        "https://xhslink.com/xsec_token/path-secret",
+        "https://xhslink.com/a?xsec%5Ftoken=underscore-secret",
+        "https://xhslink.com/a?xsec%255Ftoken=double-secret",
+    ):
+        encoded_fixture = fixture()
+        encoded_fixture["articles"][0]["shareInfoLink"] = hidden
+        public_html = MODULE.format_as_html(encoded_fixture)
+        assert hidden.rsplit("-", 1)[-1] not in public_html
+        assert "原始链接仅保留在本地 JSON" in public_html
 
     with tempfile.TemporaryDirectory() as tmp:
         MODULE.fetch_xhs_hot_notes = lambda **_: fixture()

@@ -14,7 +14,7 @@ import re
 import urllib.request
 import urllib.error
 from datetime import date, datetime
-from urllib.parse import parse_qs, urlparse
+from urllib.parse import parse_qs, unquote, urlparse
 
 
 def parse_count(value):
@@ -99,7 +99,13 @@ def public_note_link(item):
     raw = valid_note_link(item)
     if not raw:
         return ""
-    if re.search(r"xsec_token(?:=|%3d)", raw, re.IGNORECASE):
+    decoded = raw
+    for _ in range(3):
+        next_value = unquote(decoded)
+        if next_value == decoded:
+            break
+        decoded = next_value
+    if "xsec_token" in decoded.lower():
         return ""
     host = (urlparse(raw).hostname or "").lower()
     return "" if is_same_or_subdomain(host, "xiaohongshu.com") else raw
