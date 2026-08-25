@@ -1,5 +1,5 @@
 ---
-name: creator-buddy
+name: huahai-creator-buddy
 description: 创作者全域内容搜索总控 Skill。用户发送平台名+关键词、平台链接，或要求分析博主、文章风格、热度、点赞、收藏、评论、爆款原因、选题方向时触发；根据平台和任务自动路由到小红书热门笔记、全域内容搜索、公众号爆款搜索、公众号赛道分析等分支 Skill。
 license: MIT
 metadata:
@@ -7,10 +7,10 @@ metadata:
   runtime: "agent-skills"
   version: "1.0.0"
   routes:
-    - gzh-Skills/xhs-hotnotes
-    - gzh-Skills/global-content-search
-    - gzh-Skills/gzh-explosive-content-detector
-    - gzh-Skills/baokuan-article-analysis
+    - gzh-Skills/huahai-xhs-hotnotes
+    - gzh-Skills/huahai-global-content-search
+    - gzh-Skills/huahai-gzh-explosive-content-detector
+    - gzh-Skills/huahai-baokuan-article-analysis
   tags:
     - creator
     - content-search
@@ -22,7 +22,7 @@ metadata:
     - creator-analytics
 ---
 
-# Creator Buddy 总控 Skill
+# Huahai Creator Buddy 总控 Skill
 
 你是创作者的全域内容搜索与运营分析总控。你的职责不是自己硬抓所有平台，而是先识别用户输入的“平台、对象、任务”，再调用本仓库里的分支 Skill 或脚本完成搜索、分析和报告生成。
 
@@ -60,10 +60,10 @@ metadata:
 
 ### 1. 小红书关键词热度
 
-优先使用 `gzh-Skills/xhs-hotnotes` 查询热门笔记，因为它有相关性、热度、时效评分和 HTML 报告。
+优先使用 `gzh-Skills/huahai-xhs-hotnotes` 查询热门笔记，因为它有相关性、热度、时效评分和 HTML 报告。
 
 ```bash
-python3 gzh-Skills/xhs-hotnotes/scripts/fetch_xhs_hot_articles.py \
+python3 gzh-Skills/huahai-xhs-hotnotes/scripts/fetch_xhs_hot_articles.py \
   --keyword "<关键词>" \
   --start-date "<YYYY-MM-DD>"
 ```
@@ -77,7 +77,7 @@ python3 gzh-Skills/xhs-hotnotes/scripts/fetch_xhs_hot_articles.py \
 
 ### 2. 小红书链接、博主、评论分析
 
-使用 `gzh-Skills/global-content-search`。它的顺序是：
+使用 `gzh-Skills/huahai-global-content-search`。它的顺序是：
 
 1. 先走 Agent Reach 后端：OpenCLI / xiaohongshu-mcp / xhs-cli
 2. Agent Reach 搜不了时，提示或使用 `GUAIKEI_API_TOKEN` 兜底
@@ -85,7 +85,7 @@ python3 gzh-Skills/xhs-hotnotes/scripts/fetch_xhs_hot_articles.py \
 关键词：
 
 ```bash
-node gzh-Skills/global-content-search/src/xiaohongshu/search-cli.js \
+node gzh-Skills/huahai-global-content-search/src/xiaohongshu/search-cli.js \
   --platform xiaohongshu \
   --keyword "<关键词>" \
   --limit 20
@@ -94,7 +94,7 @@ node gzh-Skills/global-content-search/src/xiaohongshu/search-cli.js \
 笔记详情/评论：
 
 ```bash
-node gzh-Skills/global-content-search/src/xiaohongshu/detail-cli.js \
+node gzh-Skills/huahai-global-content-search/src/xiaohongshu/detail-cli.js \
   --platform xiaohongshu \
   --url "<小红书笔记URL>" \
   --limit 100
@@ -103,7 +103,7 @@ node gzh-Skills/global-content-search/src/xiaohongshu/detail-cli.js \
 博主作品：
 
 ```bash
-node gzh-Skills/global-content-search/src/xiaohongshu/post-cli.js \
+node gzh-Skills/huahai-global-content-search/src/xiaohongshu/post-cli.js \
   --platform xiaohongshu \
   --url "<小红书主页URL>" \
   --limit 20
@@ -111,17 +111,17 @@ node gzh-Skills/global-content-search/src/xiaohongshu/post-cli.js \
 
 ### 3. B站关键词、视频、UP主
 
-使用 `gzh-Skills/global-content-search`。优先 `bili-cli` / `opencli bilibili`，否则走 B站公开 API。
+使用 `gzh-Skills/huahai-global-content-search`。优先 `bili-cli` / `opencli bilibili`，否则走 B站公开 API。
 
 ```bash
-node gzh-Skills/global-content-search/src/xiaohongshu/search-cli.js \
+node gzh-Skills/huahai-global-content-search/src/xiaohongshu/search-cli.js \
   --platform bilibili \
   --keyword "<关键词>" \
   --limit 10
 ```
 
 ```bash
-node gzh-Skills/global-content-search/src/xiaohongshu/detail-cli.js \
+node gzh-Skills/huahai-global-content-search/src/xiaohongshu/detail-cli.js \
   --platform bilibili \
   --url "<BV号或视频链接>"
 ```
@@ -138,7 +138,7 @@ node gzh-Skills/global-content-search/src/xiaohongshu/detail-cli.js \
 抖音当前作为扩展入口。若环境中有 `DOUYIN_COMMAND`，则走自定义只读 CLI；否则明确告诉用户当前未配置抖音后端。
 
 ```bash
-node gzh-Skills/global-content-search/src/xiaohongshu/search-cli.js \
+node gzh-Skills/huahai-global-content-search/src/xiaohongshu/search-cli.js \
   --platform douyin \
   --keyword "<关键词>" \
   --limit 10
@@ -148,10 +148,10 @@ node gzh-Skills/global-content-search/src/xiaohongshu/search-cli.js \
 
 ### 5. 公众号关键词爆款
 
-使用 `gzh-Skills/gzh-explosive-content-detector`。
+使用 `gzh-Skills/huahai-gzh-explosive-content-detector`。
 
 ```bash
-python3 gzh-Skills/gzh-explosive-content-detector/scripts/fetch_gzh_trends.py \
+python3 gzh-Skills/huahai-gzh-explosive-content-detector/scripts/fetch_gzh_trends.py \
   --keyword "<关键词>" \
   --start-date "<YYYY-MM-DD>"
 ```
@@ -164,10 +164,10 @@ python3 gzh-Skills/gzh-explosive-content-detector/scripts/fetch_gzh_trends.py \
 
 ### 6. 公众号赛道聚合分析
 
-使用 `gzh-Skills/baokuan-article-analysis`。适合多关键词、赛道级报告。
+使用 `gzh-Skills/huahai-baokuan-article-analysis`。适合多关键词、赛道级报告。
 
 ```bash
-python3 gzh-Skills/baokuan-article-analysis/scripts/daily_sector_trends.py \
+python3 gzh-Skills/huahai-baokuan-article-analysis/scripts/daily_sector_trends.py \
   --sector "<赛道名>=关键词1,关键词2,关键词3" \
   --days 7 \
   --output-dir ./reports

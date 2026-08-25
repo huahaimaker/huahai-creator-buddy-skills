@@ -1,6 +1,6 @@
-<h1 align="center">Creator Buddy</h1>
+<h1 align="center">Huahai Creator Buddy</h1>
 
-<p align="center"><code>creator-buddy.skill</code></p>
+<p align="center"><code>huahai-creator-buddy.skill</code></p>
 
 <p align="center"><em>「从一个选题，到一篇能发的成品」</em></p>
 
@@ -12,12 +12,12 @@
 </p>
 
 <p align="center">
-  公众号 / 小红书 / B站 / 知乎：<strong>空格的键盘</strong> ｜ <a href="mailto:wzfh520@gmail.com">wzfh520@gmail.com</a>
+  作者：<strong>花海</strong> ｜ VX：<strong>SeaMinnie</strong>
 </p>
 
-Creator Buddy 是一套给内容创作者、运营和自媒体作者用的**全栈创作 Skill 工具箱**。
+Huahai Creator Buddy 是一套给内容创作者、运营和自媒体作者用的**全栈创作 Skill 工具箱**。
 
-它覆盖三个平台的创作全流程——**公众号、小红书、视频**，并包含花海个人 IP 视觉技能：从平台情报（搜热点、挖爆款、看评论、拆竞品），到成品产出（起标题、写正文、做配图、剪视频、配音配乐、出封面）。
+它覆盖三个平台的创作全流程——**公众号、小红书、视频**：从平台情报（搜热点、挖爆款、看评论、拆竞品），到成品产出（起标题、写正文、做配图、剪视频、配音配乐、出封面）。
 
 基于开放的 Agent Skills 协议，可在 Claude Code、Codex、Cursor、OpenClaw、Hermes Agent、CodeBuddy、Workbuddy、Gemini CLI、OpenCode 等兼容 runtime 中运行。
 
@@ -27,13 +27,12 @@ Creator Buddy 是一套给内容创作者、运营和自媒体作者用的**全�
 
 ---
 
-## 四大板块
+## 三大板块
 
 ```text
 gzh-Skills/     公众号   ── 搜爆款 · 起标题 · 出配图 · 整篇排版
 xhs-Skills/     小红书   ── 定位 · 选题 · 标题 · 正文 · 封面 · 图文 · 复盘
 video-Skills/   视频     ── 选题 · 脚本 · 剪辑 · B-roll · 字幕 · 配音配乐 · 封面
-huahai-Skills/  花海 IP  ── 角色一致性 · 正文配图 · 个人视觉资产
 ```
 
 ### 📰 公众号 · `gzh-Skills`
@@ -42,13 +41,14 @@ huahai-Skills/  花海 IP  ── 角色一致性 · 正文配图 · 个人视�
 
 | Skill | 干什么 |
 |---|---|
-| `baokuan-article-analysis` | 按赛道/关键词抓公众号爆款，做数据洞察 |
-| `gzh-explosive-content-detector` | 每日爆款收录（低粉高阅读、数据增长中） |
-| `global-content-search` | 全域内容搜索（小红书/B站/抖音关键词、详情、评论） |
-| `baokuan-title-generator` | 科技/AI 领域 10万+ 爆款标题生成、评分、A/B |
-| `space-chart-image` | **配图**：10 类图表（流程/架构/思维导图/SWOT…） |
-| `space-text-logic-diagram` | **配图**：文本逻辑拆解 → 逻辑关系图 |
-| `space-wechat-layout` | **排版**：整篇文章 → 公众号 HTML（一键复制） |
+| `huahai-baokuan-article-analysis` | 按赛道/关键词抓公众号爆款，做数据洞察 |
+| `huahai-gzh-explosive-content-detector` | 每日爆款收录（低粉高阅读、数据增长中） |
+| `huahai-global-content-search` | 全域内容搜索（小红书/B站/抖音关键词、详情、评论） |
+| `huahai-xhs-hotnotes` | 小红书热门笔记搜索，找选题灵感 |
+| `huahai-baokuan-title-generator` | 科技/AI 领域 10万+ 爆款标题生成、评分、A/B |
+| `huahai-space-chart-image` | **配图**：10 类图表（流程/架构/思维导图/SWOT…） |
+| `huahai-space-text-logic-diagram` | **配图**：文本逻辑拆解 → 逻辑关系图 |
+| `huahai-space-wechat-layout` | **排版**：整篇文章 → 公众号 HTML（一键复制） |
 
 > 三个配图 Skill 都是「用户给内容 → 输出 HTML 或用 Codex/workbuddy 内置出图模型生成图片」。
 
@@ -58,43 +58,33 @@ huahai-Skills/  花海 IP  ── 角色一致性 · 正文配图 · 个人视�
 
 | Skill | 干什么 |
 |---|---|
-| `space-xhs-buddy` | **总控台**：判断你卡在哪一环，路由并串工作流 |
-| `space-xhs-positioning` | 起号定位：赛道、定位句、人设、内容支柱、冷启动 |
-| `space-xhs-hotspot` | 热点选题：拉高互动笔记、判趋势、爆款共性 |
-| `space-xhs-title` | 爆款标题：15 种小红书方法批量出候选、评分、合规 |
-| `space-xhs-writer` | 笔记正文：7 种笔记类型、标签策略、发布前 14 项体检 |
-| `space-xhs-cover` | 封面：Codex 内置生图，3:4，单张或多版测试 |
-| `xhs-html` | 图文排版：6+ 张 3:4 单文件 HTML，62 种风格 |
-| `space-xhs-image` | AI 信息图：Codex 生图，单图或 6–9 张组图 |
-| `space-xhs-account-audit` | 账号体检：八维打分、竞品对标、卡点定位 |
-| `space-xhs-note-analytics` | 笔记复盘：六层漏斗归因、多篇横向找规律 |
+| `huahai-space-xhs-buddy` | **总控台**：判断你卡在哪一环，路由并串工作流 |
+| `huahai-space-xhs-positioning` | 起号定位：赛道、定位句、人设、内容支柱、冷启动 |
+| `huahai-space-xhs-hotspot` | 热点选题：拉高互动笔记、判趋势、爆款共性 |
+| `huahai-space-xhs-title` | 爆款标题：15 种小红书方法批量出候选、评分、合规 |
+| `huahai-space-xhs-writer` | 笔记正文：7 种笔记类型、标签策略、发布前 14 项体检 |
+| `huahai-space-xhs-cover` | 封面：Codex 内置生图，3:4，单张或多版测试 |
+| `huahai-xhs-html` | 图文排版：6+ 张 3:4 单文件 HTML，62 种风格 |
+| `huahai-space-xhs-image` | AI 信息图：Codex 生图，单图或 6–9 张组图 |
+| `huahai-space-xhs-account-audit` | 账号体检：八维打分、竞品对标、卡点定位 |
+| `huahai-space-xhs-note-analytics` | 笔记复盘：六层漏斗归因、多篇横向找规律 |
 
 ### 🎬 视频 · `video-Skills`
 
-一条视频从想法到成片的流水线，`space-video` 总控调度。
+一条视频从想法到成片的流水线，`huahai-space-video` 总控调度。
 
 | Skill | 干什么 |
 |---|---|
-| `space-video` | **总控/导演**：判断走哪步、路由子技能、成片后复盘 |
-| `space-video-topic` | 选题：下载参考去水印 · 逐字稿 · 标题 · 正文 |
-| `space-video-transcript` | **链接转字幕**：YouTube/小宇宙/B站/抖音/小红书 → Markdown + SRT，完成后再按需下载源文件 |
-| `space-video-script` | 脚本：去 AI 味口播 + 精确到秒分镜 |
-| `space-video-edit` | 剪辑：剪口播（删前保后 + 风险分层）+ 成片 |
-| `space-video-broll` | B-roll：HTML→确定性 MP4，多风格、Anti-PPT |
-| `space-video-broll-sketch` | B-roll：文章转手绘图解，调 Seedance/libtv 生成 |
-| `space-video-subtitle` | 字幕：转写 · 断句 · AI 校对 · 烧录 |
-| `space-video-audio` | 配音配乐：TTS 旁白 · 找 BGM · 压音混音 |
-| `space-video-cover` | 封面：家族气质 + 平台比例 + 高点击缩略图 |
-
-### 🌊 花海 IP · `huahai-Skills`
-
-花海个人角色与视觉资产工作流。
-
-| Skill | 干什么 |
-|---|---|
-| `huahai-cat-illustrations` | **正文配图**：用花海猫角色三视图保持 IP 一致性，将文章认知锚点生成 16:9 白底手绘配图 |
-
----
+| `huahai-space-video` | **总控/导演**：判断走哪步、路由子技能、成片后复盘 |
+| `huahai-space-video-topic` | 选题：下载参考去水印 · 逐字稿 · 标题 · 正文 |
+| `huahai-space-video-transcript` | **链接转字幕**：YouTube/小宇宙/B站/抖音/小红书 → Markdown + SRT，完成后再按需下载源文件 |
+| `huahai-space-video-script` | 脚本：去 AI 味口播 + 精确到秒分镜 |
+| `huahai-space-video-edit` | 剪辑：剪口播（删前保后 + 风险分层）+ 成片 |
+| `huahai-space-video-broll` | B-roll：HTML→确定性 MP4，多风格、Anti-PPT |
+| `huahai-space-video-broll-sketch` | B-roll：文章转手绘图解，调 Seedance/libtv 生成 |
+| `huahai-space-video-subtitle` | 字幕：转写 · 断句 · AI 校对 · 烧录 |
+| `huahai-space-video-audio` | 配音配乐：TTS 旁白 · 找 BGM · 压音混音 |
+| `huahai-space-video-cover` | 封面：家族气质 + 平台比例 + 高点击缩略图 |
 
 ## 效果示例
 
@@ -125,20 +115,20 @@ huahai-Skills/  花海 IP  ── 角色一致性 · 正文配图 · 个人视�
 
 ## 安装
 
-Creator Buddy 基于开放的 Agent Skills 协议，可在任何 skills-compatible 的 AI agent runtime 中运行。
+Huahai Creator Buddy 基于开放的 Agent Skills 协议，可在任何 skills-compatible 的 AI agent runtime 中运行。
 
 ### 方式一：一行命令（推荐，跨 runtime）
 
 打开你正在用的 agent，告诉它：
 
 ```text
-帮我安装这个 skill：https://github.com/SpaceZephyr/creator-buddy
+帮我安装这个 skill：https://github.com/huahaimaker/creator-buddy-skills
 ```
 
 或者用通用 CLI 安装器（vercel-labs/skills，支持多 runtime）：
 
 ```bash
-npx skills add SpaceZephyr/creator-buddy
+npx skills add huahaimaker/creator-buddy-skills
 ```
 
 它会自动识别当前 runtime 并放到正确目录。需要指定时加 `-a codex` / `-a claude-code` / `-a cursor`。
@@ -148,7 +138,7 @@ npx skills add SpaceZephyr/creator-buddy
 克隆仓库，把需要的 skill 目录复制到你的 runtime skills 目录：
 
 ```bash
-git clone https://github.com/SpaceZephyr/creator-buddy.git
+git clone https://github.com/huahaimaker/creator-buddy-skills.git
 ```
 
 仓库结构：
@@ -157,7 +147,6 @@ git clone https://github.com/SpaceZephyr/creator-buddy.git
 gzh-Skills/       公众号：搜索分析 + 标题 + 配图
 xhs-Skills/       小红书：起号全流程（10 个 Skill）
 video-Skills/     视频创作：选题→脚本→剪辑→B-roll→字幕→配音→封面
-huahai-Skills/    花海个人 IP：角色一致性正文配图
 ```
 
 每个子目录都是一个独立 Skill（一份 `SKILL.md` + 可选脚本/references）。
@@ -180,13 +169,12 @@ huahai-Skills/    花海个人 IP：角色一致性正文配图
 帮我把这条口播视频从头做到发：选题、脚本、剪辑、字幕、配乐、封面
 把这个 YouTube / 小宇宙 / B站 / 抖音 / 小红书链接提取成字幕
 给这篇文章做一支手绘图解 B-roll
-用花海猫 IP 给这篇文章生成 4 张正文配图
 ```
 
 也可以手动运行脚本，例如公众号赛道分析：
 
 ```bash
-python3 gzh-Skills/baokuan-article-analysis/scripts/daily_sector_trends.py \
+python3 gzh-Skills/huahai-baokuan-article-analysis/scripts/daily_sector_trends.py \
   --sector "AI Coding=Codex,Claude Code,AI编程" --days 7 --output-dir ./reports
 ```
 
@@ -194,14 +182,14 @@ python3 gzh-Skills/baokuan-article-analysis/scripts/daily_sector_trends.py \
 
 ## 工作原理
 
-Creator Buddy 不是一个单一爬虫，而是一组内容创作 Skill，分两半：
+Huahai Creator Buddy 不是一个单一爬虫，而是一组内容创作 Skill，分两半：
 
 | 半 | 做什么 |
 |---|---|
 | **情报** | 通过 Redfox、Agent Reach、OpenCLI、bili-cli、公开 API 等读取公开内容 → 去重排序评分 → 出结构化报告 → 让 Agent 提炼选题方向 |
 | **产出** | 把选题继续做成标题、正文、配图、排版、视频、字幕、配乐、封面。配图/视频优先用 Codex/workbuddy 内置出图模型或本地确定性渲染 |
 
-其中 `global-content-search` 的访问顺序是 Agent Reach 优先、Guaikei API 兜底（小红书需 `GUAIKEI_API_TOKEN`；B站走 `bili-cli`/公开 API；抖音预留 `DOUYIN_COMMAND` 只读 CLI）。
+其中 `huahai-global-content-search` 的访问顺序是 Agent Reach 优先、Guaikei API 兜底（小红书需 `GUAIKEI_API_TOKEN`；B站走 `bili-cli`/公开 API；抖音预留 `DOUYIN_COMMAND` 只读 CLI）。
 
 ---
 
@@ -216,7 +204,7 @@ Creator Buddy 不是一个单一爬虫，而是一组内容创作 Skill，分两
 
 ## 风控与安全性说明
 
-Creator Buddy 的定位是公开内容研究与创作辅助，不是账号自动化工具。
+Huahai Creator Buddy 的定位是公开内容研究与创作辅助，不是账号自动化工具。
 
 - **只读公开数据**：默认只读公开页面、公开 API、只读 CLI 或你本机已授权的只读工具。
 - **不做账号动作**：不发帖、点赞、收藏、评论、关注、私信、批量加好友。
