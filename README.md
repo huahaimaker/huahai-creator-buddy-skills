@@ -86,7 +86,49 @@ huahai-video-Skills/   视频     ── 选题 · 脚本 · 剪辑 · B-roll ·
 | `huahai-space-video-audio` | 配音配乐：TTS 旁白 · 找 BGM · 压音混音 |
 | `huahai-space-video-cover` | 封面：家族气质 + 平台比例 + 高点击缩略图 |
 
-## 效果示例
+## 实际效果
+
+下面的图片都由仓库内模板和确定性时间轴**实际渲染**，不是概念占位图。
+
+### 小红书 3:4 图文
+
+由 `huahai-xhs-html` 的 1080×1440 模板生成，使用 Apple 风格的高留白知识卡片版式。
+
+<table>
+  <tr>
+    <td width="33%"><img src="docs/assets/xhs-cover.png" alt="小红书图文封面效果"></td>
+    <td width="33%"><img src="docs/assets/xhs-capability-map.png" alt="小红书能力地图效果"></td>
+    <td width="33%"><img src="docs/assets/xhs-workflow.png" alt="小红书执行链路效果"></td>
+  </tr>
+  <tr>
+    <td align="center"><sub>封面：结果承诺</sub></td>
+    <td align="center"><sub>内页：能力地图</sub></td>
+    <td align="center"><sub>内页：执行链路</sub></td>
+  </tr>
+</table>
+
+### 公众号逻辑图与视频 B-roll
+
+左图来自 `huahai-space-text-logic-diagram` 的 SVG 逻辑图模板；右图调用 `huahai-space-video-broll` 同款 `window.seek(t)` 确定性时间轴逐帧渲染，并压缩为 README 动态预览。
+
+<table>
+  <tr>
+    <td width="64%"><img src="docs/assets/logic-diagram.png" alt="公众号逻辑关系图效果"></td>
+    <td width="36%"><img src="docs/assets/broll-preview.gif" alt="视频 B-roll 动态效果"></td>
+  </tr>
+  <tr>
+    <td align="center"><sub>公众号配图：创作内容生产闭环</sub></td>
+    <td align="center"><sub>视频 B-roll：6 秒抽帧预览</sub></td>
+  </tr>
+</table>
+
+效果图可以重新生成：
+
+```bash
+node docs/showcase/render-showcase.mjs
+```
+
+### 使用示例
 
 **先做情报**——把平台语境还原出来，而不是泛泛「帮我想 10 个选题」：
 
