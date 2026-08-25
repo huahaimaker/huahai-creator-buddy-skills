@@ -1,6 +1,6 @@
 ---
 name: huahai-creator-buddy
-description: 花海创作者工具箱总路由。根据用户的平台、目标、输入证据和所需产物，选择公众号或小红书的搜索、分析、定位、写作、标题、排版和复盘 Skill，并在跨步骤流程中保留来源、时间窗、缺失字段和验证状态。适用于“帮我做公众号/小红书”“搜索并分析后继续写”“不知道该用哪个 Skill”等请求。
+description: 花海创作者工具箱总路由。根据用户的平台、目标、输入证据和所需产物，选择公众号或小红书的搜索、分析、定位、写作、标题和复盘 Skill，并在跨步骤流程中保留来源、时间窗、缺失字段和验证状态。适用于“帮我做公众号/小红书”“搜索并分析后继续写”“不知道该用哪个 Skill”等请求。
 license: MIT
 metadata:
   type: orchestrator
@@ -11,7 +11,6 @@ metadata:
     - huahai-gzh-Skills/huahai-baokuan-title-generator
     - huahai-gzh-Skills/huahai-global-content-search
     - huahai-gzh-Skills/huahai-gzh-explosive-content-detector
-    - huahai-gzh-Skills/huahai-space-wechat-layout
     - huahai-gzh-Skills/huahai-xhs-hotnotes
     - huahai-xhs-Skills/huahai-space-xhs-account-audit
     - huahai-xhs-Skills/huahai-space-xhs-buddy
@@ -34,9 +33,9 @@ metadata:
 | --- | --- |
 | platform | 公众号 / 小红书 / B站 / 抖音 / 跨平台 |
 | object | 关键词、链接、账号、文章、草稿、截图或数据文件 |
-| task | 搜索、分析、定位、写作、标题、排版或复盘 |
+| task | 搜索、分析、定位、写作、标题或复盘 |
 | evidence | 用户素材、公开后端、本地文件及时间窗 |
-| output | 表格、JSON、正文、HTML 或实验计划 |
+| output | 表格、JSON、正文或实验计划 |
 
 已有信息足够就直接执行。只有歧义会改变路线或用户授权边界时，才补问一个最小问题。
 
@@ -49,7 +48,6 @@ metadata:
 | 多关键词公众号赛道聚合 | `huahai-baokuan-article-analysis` |
 | 单关键词公众号高传播内容 | `huahai-gzh-explosive-content-detector` |
 | 公众号标题 | `huahai-baokuan-title-generator` |
-| Markdown 转公众号 HTML | `huahai-space-wechat-layout` |
 | 小红书近期热门数据 | `huahai-xhs-hotnotes` |
 | 小红书/B站/抖音关键词、详情、账号作品 | `huahai-global-content-search` |
 
@@ -76,7 +74,6 @@ metadata:
 - B站搜索/详情可用公开 API，账号作品另需对应后端；
 - 抖音只在用户显式配置 `DOUYIN_COMMAND` 时可用；
 - 本地 CSV/Excel、标题、正文和定位不依赖平台后端；
-- 公众号 HTML 有固定本地渲染器，但公众号编辑器实贴必须单独验证。
 
 成功状态至少包含：退出码正确、机器输出可解析、`status` 与后端明确、结果非空或明确的真实空集、查询参数与用户输入一致。
 
@@ -126,8 +123,7 @@ positioning → 5–10 篇单变量计划 → 用户发布
 ### 公众号文章
 
 ```text
-原始文章 → 标题事实核验 → title → layout → 本地验证
-                                         → 公众号实贴验证（单独状态）
+原始文章 → 标题事实核验 → title → 用户自行排版发布
 ```
 
 ## 6. 输出状态
@@ -140,10 +136,10 @@ positioning → 5–10 篇单变量计划 → 用户发布
 - `partial`：部分后端/字段通过，其余缺失；
 - `empty`：查询成功但真实返回空集；
 - `unavailable`：缺后端、凭证或权限；
-- `structural-only`：只验证语法、文件、构建或 HTML 结构；
+- `structural-only`：只验证语法、文件或构建结构；
 - `untested`：尚未执行。
 
-不得把 structural-only 说成线上、浏览器、公众号实贴、真实账号或发布效果已验证。
+不得把 structural-only 说成线上、真实账号或发布效果已验证。
 
 ## 7. 诚实与安全
 

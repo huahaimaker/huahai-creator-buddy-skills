@@ -11,12 +11,13 @@ from pathlib import Path
 
 
 ROOT = Path(__file__).resolve().parent.parent
-EXPECTED_SKILLS = 14
+EXPECTED_SKILLS = 13
 DELETED_OR_STALE = (
     "xhs-ops-copilot",
     "xhs-content-research",
     "xiaohongshu-content-tools",
     "huahai-cat-illustrations",
+    "huahai-space-wechat-layout",
     "~/.claude",
 )
 
@@ -143,7 +144,6 @@ def main() -> None:
         ["node", "huahai-gzh-Skills/huahai-global-content-search/scripts/test_cli_contract.js"],
         [sys.executable, "huahai-xhs-Skills/huahai-space-xhs-note-analytics/scripts/test_xhs_notes.py"],
         [sys.executable, "huahai-xhs-Skills/huahai-space-xhs-hotspot/scripts/test_hotspot_contract.py"],
-        [sys.executable, "huahai-gzh-Skills/huahai-space-wechat-layout/scripts/test_render_wechat_layout.py"],
     ]
     for command in runtime_tests:
         checks += 1

@@ -1,12 +1,12 @@
 # Huahai Creator Buddy Skills
 
-一套面向公众号与小红书创作者的 Agent Skills：先核验输入和数据能力，再做搜索、分析、定位、写作、标题、排版与复盘。
+一套面向公众号与小红书创作者的 Agent Skills：先核验输入和数据能力，再做搜索、分析、定位、写作、标题与复盘。
 
 作者：**花海**｜VX：**SeaMinnie**
 
 仓库：`huahaimaker/huahai-creator-buddy-skills`
 
-当前共 **14 个 Skill**：1 个根路由 + 13 个专项 Skill。视频制作、自动配图和 `huahai-cat-illustrations` 已移除，不在当前仓库能力范围内。
+当前共 **13 个 Skill**：1 个根路由 + 12 个专项 Skill。视频制作、自动配图、公众号排版和 `huahai-cat-illustrations` 已移除，不在当前仓库能力范围内。
 
 ## 这版解决什么
 
@@ -15,8 +15,7 @@
 - 标题与正文中的数字、身份、价格、经历和效果必须回指用户事实；
 - 账号截图看不到的维度记 `N/A`，不拼凑虚假 100 分；
 - 小红书定位改为 5–10 篇小样本实验，不承诺固定涨粉结果；
-- 公众号排版有固定零依赖 CLI，可重复生成同一份内联样式 HTML；
-- 所有验证结果区分 fixture、真实联网、本地预览和公众号实贴。
+- 所有验证结果区分 fixture、真实联网、真实本地文件和未验证状态。
 
 ## 目录
 
@@ -24,7 +23,7 @@
 .
 ├── SKILL.md                         # 根路由
 ├── test-prompts.json                # 根路由回归集
-├── huahai-gzh-Skills/               # 公众号与跨平台：6 个
+├── huahai-gzh-Skills/               # 公众号与跨平台：5 个
 ├── huahai-xhs-Skills/               # 小红书生产与复盘：7 个
 └── scripts/validate_repository.py   # 仓库级验证
 ```
@@ -38,7 +37,6 @@
 | `huahai-global-content-search` | 小红书/B站/抖音搜索、详情、账号作品 | 各操作能力不同，见子 Skill 能力矩阵 |
 | `huahai-xhs-hotnotes` | 小红书近期热门笔记 | 需要 `REDFOX_API_KEY`；返回快照，不是平台实时值 |
 | `huahai-baokuan-title-generator` | 科技/AI 公众号标题 | 事实和来源台账，不承诺“10 万+” |
-| `huahai-space-wechat-layout` | Markdown → 可复制公众号 HTML | 本地固定渲染器；公众号后台实贴需单独验证 |
 
 ## 小红书
 
@@ -54,14 +52,14 @@
 
 ## 安装
 
-安装全部 14 个 Skill：
+安装全部 13 个 Skill：
 
 ```bash
 npx skills add huahaimaker/huahai-creator-buddy-skills \
   --full-depth --skill '*' -y
 ```
 
-仓库根目录本身也是一个 Skill，因此必须加 `--full-depth` 才会继续发现 13 个嵌套 Skill。只想安装总路由时可以省略它。
+仓库根目录本身也是一个 Skill，因此必须加 `--full-depth` 才会继续发现 12 个嵌套 Skill。只想安装总路由时可以省略它。
 
 安装前只列出可发现项：
 
@@ -86,13 +84,13 @@ python3 scripts/validate_repository.py
 
 验证器会检查：
 
-- 14 个 `SKILL.md` 的 frontmatter、`huahai-` 前缀和唯一名称；
-- 14 份 `test-prompts.json` 的结构与唯一用例 id；
+- 13 个 `SKILL.md` 的 frontmatter、`huahai-` 前缀和唯一名称；
+- 13 份 `test-prompts.json` 的结构与唯一用例 id；
 - 所有 JSON 可解析；
 - 所有 Python 可编译、所有 JavaScript 通过 `node --check`；
-- 根路由指向 13 个真实子 Skill；
+- 根路由指向 12 个真实子 Skill；
 - 已删除模块和旧 Skill 引用没有残留；
-- 全局搜索 CLI、笔记复盘、热点数据和公众号 HTML 的确定性运行回归。
+- 全局搜索 CLI、笔记复盘和热点数据的确定性运行回归。
 
 这一步是结构和 fixture 验证，不会调用付费 API，也不代表所有远端后端当前可用。
 
@@ -130,18 +128,6 @@ python3 huahai-xhs-Skills/huahai-space-xhs-note-analytics/scripts/xhs_notes.py \
 
 先探查字段和时间窗，再执行 `metrics` 或 `group`。缺失、负数、混合时间窗和冲突比率不会进入统计。
 
-### 公众号 HTML
-
-```bash
-python3 huahai-gzh-Skills/huahai-space-wechat-layout/scripts/render_wechat_layout.py \
-  --input '/absolute/path/article.md' \
-  --output '/absolute/path/wechat-layout-output/index.html' \
-  --style auto \
-  --frontmatter auto
-```
-
-成功 JSON 会返回实际风格、来源字节数、区块数、frontmatter 状态和文章 SHA-256。普通正文若恰好以 `--- / key: value / ---` 开头，可用 `--frontmatter keep` 明确保留。打开 `index.html` 后点击“复制 HTML”。
-
 ## 凭证与后端
 
 | 配置 | 用途 |
@@ -165,7 +151,7 @@ python3 huahai-gzh-Skills/huahai-space-wechat-layout/scripts/render_wechat_layou
 | `verified-live` | 当前真实请求返回成功数据 |
 | `verified-local` | 用户真实本地文件成功解析且口径已检查 |
 | `verified-fixture` | 确定性 fixture 通过输入/错误/空集合同 |
-| `structural-only` | 仅语法、文件、构建或 HTML 结构通过 |
+| `structural-only` | 仅语法、文件或构建结构通过 |
 | `partial` | 部分字段或后端通过 |
 | `empty` | 请求成功但真实返回空集 |
 | `unavailable` | 缺后端、凭证、权限或网络 |
@@ -180,8 +166,7 @@ python3 huahai-gzh-Skills/huahai-space-wechat-layout/scripts/render_wechat_layou
 - 不用无关结果补满空集；
 - 不把公开互动数当内容质量或账号适配度；
 - 不把标题评分、热点样本或小样本相关性写成增长保证；
-- 不虚构身份、经历、数据、引用、功效和平台规则；
-- 不把本地 HTML 预览说成公众号编辑器实贴通过。
+- 不虚构身份、经历、数据、引用、功效和平台规则。
 
 ## 许可证
 

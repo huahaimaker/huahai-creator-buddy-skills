@@ -1,6 +1,6 @@
 # huahai-gzh-Skills · 公众号内容 Skill 集合
 
-面向微信公众号内容创作：从找选题、拆爆款、起标题，到整篇文章排版。
+面向微信公众号内容创作：覆盖找选题、拆爆款和起标题。
 
 ## 技能清单
 
@@ -18,14 +18,8 @@
 | 技能 | 作用 |
 |---|---|
 | `huahai-baokuan-title-generator` | 科技与 AI 领域爆款标题生成、评分与 A/B 建议 |
-| `huahai-space-wechat-layout` | 整篇文章转公众号 HTML 排版，可一键复制 |
 
 ## 使用边界
 
 - 默认只读取公开内容，不执行发布、点赞、评论、关注或私信。
 - 平台数据可能来自第三方服务或入库快照，不能当作实时后台数据。
-- 公众号排版只处理文章结构和 HTML 样式，不生成文章配图。
-
-## 致谢
-
-`huahai-space-wechat-layout` 改编自 [SpaceZephyr/design-buddy](https://github.com/SpaceZephyr/design-buddy)，并适配为公众号整篇 HTML 排版。

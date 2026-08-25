@@ -1,6 +1,6 @@
 # Validation Report
 
-审计日期：2026-08-25｜分支：`auto-optimize/20260825-darwin`
+审计日期：2026-08-25｜分支：`main`
 
 本报告区分确定性 fixture、真实联网、本地浏览器和未验证项。远端平台与第三方后端会变化，安装后应重新运行 smoke test。
 
@@ -16,14 +16,14 @@ python3 scripts/validate_repository.py
 
 | 项目 | 结果 |
 | --- | ---: |
-| Skill | 14 |
-| `test-prompts.json` | 14 |
-| Python 文件 | 11 |
+| Skill | 13 |
+| `test-prompts.json` | 13 |
+| Python 文件 | 9 |
 | JavaScript 文件 | 18 |
-| 确定性检查 | 156 |
+| 确定性检查 | 158 |
 | 失败 | 0 |
 
-覆盖：frontmatter、`huahai-` 前缀、唯一 Skill 名、测试集 JSON、全部 JSON、Python 编译、JavaScript `node --check`、13 条根路由、旧/删除模块残留，以及全局搜索、笔记复盘、热点数据和公众号 HTML 的运行合同。
+覆盖：frontmatter、`huahai-` 前缀、唯一 Skill 名、测试集 JSON、全部 JSON、Python 编译、JavaScript `node --check`、12 条根路由、旧/删除模块残留，以及全局搜索、笔记复盘和热点数据的运行合同。
 
 Skills CLI 发现测试：
 
@@ -31,7 +31,7 @@ Skills CLI 发现测试：
 npx skills add . --list --full-depth
 ```
 
-结果：`Found 14 skills`。随后在独立临时目录使用 `--full-depth --skill '*' -y --copy --agent codex` 实际安装最终修订版，CLI 报告 `Installed 14 skills`，磁盘复核得到 14 份独立 `SKILL.md`。从安装后的副本再次运行全局搜索 12 项、笔记复盘 6 项、热点数据 6 项和公众号排版 7 项合同测试，全部通过。不加 `--full-depth` 时只发现根 `huahai-creator-buddy`，因此 README 的整套安装命令已显式包含该参数。
+结果：`Found 13 skills`。随后在独立临时目录使用 `--full-depth --skill '*' -y --copy --agent codex` 实际安装最终修订版，CLI 报告 `Installed 13 skills`，磁盘复核得到 13 份独立 `SKILL.md`。从安装后的副本再次运行全局搜索 12 项、笔记复盘 6 项和热点数据 6 项合同测试，全部通过。不加 `--full-depth` 时只发现根 `huahai-creator-buddy`，因此 README 的整套安装命令已显式包含该参数。
 
 注意：`test-prompts.json` 是行为回归用例集。仓库验证器检查其结构，不等于已经用某个具体模型完整执行了每条自然语言用例。
 
@@ -84,21 +84,6 @@ npx skills add . --list --full-depth
 
 状态：`verified-fixture`。当前环境没有 `REDFOX_API_KEY`，因此本次未做该 Skill 的 Redfox 真实联网请求。
 
-### 公众号 HTML
-
-入口：`huahai-space-wechat-layout/scripts/render_wechat_layout.py`
-
-| 层级 | 结果 |
-| --- | --- |
-| 渲染器回归 | 7 个确定性用例通过 |
-| 本次真实产物 | openai 风格、35 个区块、frontmatter 已移除 |
-| 文章 SHA-256 | `9f13262e8c9087835670fb8fe0d52bd01523aab9f8a64e3c9d307181619be213` |
-| 本地 HTTP | 200，响应 22762 bytes |
-| Chrome 桌面截图 | 代表性输出已人工检查：标题、层级、列表、代码和表格可读 |
-| 公众号编辑器实贴 | `untested` |
-
-本地 HTML、浏览器截图和 HTTP 2xx 不等于微信公众号编辑器保存后的保真。只有实际粘贴、保存和预览后才能升级为实贴通过。
-
 ## 指令型 Skill
 
 以下 Skill 主要是 Agent 指令，不以独立网络脚本作为核心：
@@ -111,14 +96,13 @@ npx skills add . --list --full-depth
 - `huahai-baokuan-title-generator`
 - 根 `huahai-creator-buddy`
 
-它们已通过 frontmatter、路由、测试集结构、死引用和 Darwin A/B 配对审计。三名独立审计员对基线 `eae77fe` 与优化版的 10 个剩余 Skill 均选择保留优化版；审计指出的比率、域名、计数、frontmatter、状态枚举和 token 旁路随后补了代码回归并复审。状态明确区分 `verified-live`、`verified-local`、`verified-fixture` 和 `structural-only`。自然语言输出仍依赖所用模型、用户素材和实际平台环境；事实台账与缺失状态是交付前的强制检查点。
+它们已通过 frontmatter、路由、测试集结构、死引用和 Darwin A/B 配对审计。审计指出的比率、域名、计数、frontmatter、状态枚举和 token 旁路随后补了代码回归并复审。状态明确区分 `verified-live`、`verified-local`、`verified-fixture` 和 `structural-only`。自然语言输出仍依赖所用模型、用户素材和实际平台环境；事实台账与缺失状态是交付前的强制检查点。
 
 ## 尚未声称通过
 
 - 小红书 Redfox 真实联网：当前缺 Key；
 - 小红书 OpenCLI/MCP/Guaikei 每个操作的当前线上可用性：未全量验证；
 - 抖音：没有内置后端，需用户配置 `DOUYIN_COMMAND`；
-- 微信公众号编辑器实贴、保存和手机预览；
 - 任何真实发布后的点击、互动、涨粉或商业结果；
 - 不同 Agent Runtime 的全量安装兼容性。
 
