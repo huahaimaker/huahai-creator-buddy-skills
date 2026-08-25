@@ -13,6 +13,8 @@ import json
 import socket
 import ssl
 import gzip
+import math
+from datetime import date, timedelta
 from urllib.parse import quote, urlparse
 
 
@@ -118,7 +120,7 @@ def decode_chunked(data):
 
 
 def fetch_via_no_sni(base_url: str, params: dict, headers: dict, timeout: int = 60):
-    """使用原生 socket 实现 HTTPS 请求（不发送 SNI）"""
+    """在服务端不兼容 SNI 时请求 HTTPS，同时验证证书链与主机名。"""
     if "://" in base_url:
         base_url = base_url.split("://", 1)[1]
     host, path = base_url.split("/", 1)
@@ -128,10 +130,11 @@ def fetch_via_no_sni(base_url: str, params: dict, headers: dict, timeout: int = 
         path = f"{path}?{query}"
     
     sock = socket.create_connection((host, 443), timeout=timeout)
-    context = ssl.SSLContext(ssl.PROTOCOL_TLS_CLIENT)
+    context = ssl.create_default_context()
     context.check_hostname = False
-    context.verify_mode = ssl.CERT_NONE
+    context.verify_mode = ssl.CERT_REQUIRED
     ssl_sock = context.wrap_socket(sock, server_hostname=None)
+    ssl.match_hostname(ssl_sock.getpeercert(), host)
     
     request_lines = [
         f"GET /{path} HTTP/1.1",
@@ -159,6 +162,8 @@ def fetch_via_no_sni(base_url: str, params: dict, headers: dict, timeout: int = 
     
     response_str = response_data.decode('utf-8', errors='ignore')
     lines = response_str.split('\r\n')
+    if not lines or len(lines[0].split()) < 2:
+        raise RuntimeError("数据接口返回了无效的 HTTP 响应")
     status_code = int(lines[0].split()[1])
     
     headers_dict = {}
@@ -184,7 +189,13 @@ def fetch_via_no_sni(base_url: str, params: dict, headers: dict, timeout: int = 
     return status_code, body_bytes.decode('utf-8', errors='ignore')
 
 
-def fetch_gzh_trends(keyword: str, debug: bool = False, max_retries: int = 3, start_date: str = None):
+def fetch_gzh_trends(
+    keyword: str,
+    debug: bool = False,
+    max_retries: int = 3,
+    start_date: str = None,
+    timeout: int = 60,
+):
     """调用接口获取公众号爆款数据"""
     base_url = "https://onetotenvip.com/skill/cozeSkill/getWxCozeSkillData"
     params = {"keyword": keyword, "source": "公众号爆款文章洞察-SkillHub"}
@@ -195,7 +206,7 @@ def fetch_gzh_trends(keyword: str, debug: bool = False, max_retries: int = 3, st
         "User-Agent": "Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36",
         "Accept": "application/json, text/plain, */*",
         "Accept-Language": "zh-CN,zh;q=0.9",
-        "Accept-Encoding": "gzip, deflate, br",
+        "Accept-Encoding": "gzip, deflate",
         "Connection": "close",
     }
     
@@ -205,7 +216,7 @@ def fetch_gzh_trends(keyword: str, debug: bool = False, max_retries: int = 3, st
             if debug:
                 print(f"\n=== DEBUG: 第 {attempt + 1} 次尝试 ===", file=sys.stderr)
             
-            status_code, body = fetch_via_no_sni(base_url, params, headers)
+            status_code, body = fetch_via_no_sni(base_url, params, headers, timeout=timeout)
             
             if debug:
                 print(f"状态码: {status_code}", file=sys.stderr)
@@ -272,6 +283,34 @@ def get_cover_urls(data, max_per_category=5):
     return urls
 
 
+def normalize_search_text(value):
+    """用于关键词相关性判断的轻量归一化，不依赖分词库。"""
+    return re.sub(r"[^a-z0-9\u4e00-\u9fff+#]+", "", str(value or "").lower())
+
+
+def keyword_clauses(keyword):
+    """逗号等分隔符表示 OR；同一分句里的词表示 AND。"""
+    clauses = []
+    for raw_clause in re.split(r"[,，、|/]+", keyword or ""):
+        terms = re.findall(r"[A-Za-z0-9+#.]+|[\u4e00-\u9fff]+", raw_clause)
+        normalized = [normalize_search_text(term) for term in terms if normalize_search_text(term)]
+        if normalized:
+            clauses.append(normalized)
+    return clauses
+
+
+def matches_keyword(item, keyword):
+    """标题或摘要须完整命中至少一个关键词分句；空关键词不过滤。"""
+    clauses = keyword_clauses(keyword)
+    if not clauses:
+        return True
+    text = normalize_search_text(" ".join([
+        str(item.get("title", "")),
+        str(item.get("summary", "")),
+    ]))
+    return any(all(term in text for term in terms) for terms in clauses)
+
+
 def calculate_data_score(item, cat_key):
     """
     计算数据表现分数（0-100分）
@@ -296,8 +335,6 @@ def calculate_data_score(item, cat_key):
     
     # 归一化到 0-100 分
     # 使用对数缩放，避免极值影响
-    import math
-    
     score = (
         math.log10(like_num + 1) * 15 +      # 点赞
         math.log10(share_num + 1) * 20 +     # 分享（权重最高，公众号核心指标）
@@ -321,7 +358,7 @@ def calculate_data_score(item, cat_key):
     if cat_key == 'ten_w_reading' and clicks_num >= 100000:
         score += 10
     
-    return min(100, score)
+    return score
 
 
 def merge_and_sort_all(data, max_items=10):
@@ -344,10 +381,12 @@ def merge_and_sort_all(data, max_items=10):
     
     # 1. 合并所有分类数据
     all_items = []
+    keyword = data.get("keyword", "")
     for cat_key, cat_name in categories:
         items = data.get(cat_key, [])
         for item in items:
-            all_items.append((cat_key, cat_name, item))
+            if matches_keyword(item, keyword):
+                all_items.append((cat_key, cat_name, item))
     
     # 2. 去重（按 photoId）
     seen = set()
@@ -369,10 +408,20 @@ def merge_and_sort_all(data, max_items=10):
             'score': score
         })
     
-    # 4. 按分数降序排序
+    # 4. 在当前候选池内归一化，避免高互动样本全部饱和为 100 分。
+    raw_scores = [entry["score"] for entry in scored_items]
+    if raw_scores:
+        low, high = min(raw_scores), max(raw_scores)
+        for entry in scored_items:
+            if high > low:
+                entry["score"] = round(40 + 60 * (entry["score"] - low) / (high - low), 2)
+            else:
+                entry["score"] = 60.0 if high > 0 else 0.0
+
+    # 5. 按分数降序排序
     scored_items.sort(key=lambda x: x['score'], reverse=True)
     
-    # 5. 保证分类多样性（至少2个分类有数据）
+    # 6. 保证分类多样性
     result = ensure_category_diversity(scored_items, max_items)
     
     return result
@@ -798,12 +847,16 @@ def main():
     parser.add_argument('--keyword', required=True, help='搜索关键词')
     parser.add_argument('--max-items', type=int, default=10, 
                        help='最多展示数量（默认10条）')
-    parser.add_argument('--output-format', choices=['text', 'json', 'html'], 
-                       default='html', help='输出格式：text（文本）、json（JSON）或 html（卡片布局，默认）')
+    parser.add_argument('--output-format', choices=['json', 'html'],
+                       default='html', help='输出格式：json 或 html（默认）')
     parser.add_argument('--output-file', type=str, default=None, 
                        help='输出文件路径（默认：关键词_爆款数据.html/json）')
     parser.add_argument('--start-date', type=str, default=None,
-                       help='开始日期，格式 yyyy-MM-dd（默认：最近30天）')
+                       help='开始日期，格式 yyyy-MM-dd（默认：最近7天）')
+    parser.add_argument('--max-retries', type=int, default=3,
+                       help='接口最大尝试次数（默认3次）')
+    parser.add_argument('--timeout', type=int, default=60,
+                       help='单次接口超时秒数（默认60秒）')
     parser.add_argument('--debug', action='store_true',
                        help='调试模式，打印原始API响应')
     
@@ -813,16 +866,27 @@ def main():
         if args.output_file and "\x00" in args.output_file:
             raise ValueError("输出路径包含非法字符")
 
-        # 查询数据
-        data = fetch_gzh_trends(args.keyword, debug=args.debug, start_date=args.start_date)
+        start_date = args.start_date or (date.today() - timedelta(days=7)).isoformat()
+        data = fetch_gzh_trends(
+            args.keyword,
+            debug=args.debug,
+            max_retries=max(1, args.max_retries),
+            start_date=start_date,
+            timeout=max(1, args.timeout),
+        )
+        json_result = format_as_json(data, args.max_items)
+        if not json_result["items"]:
+            raise RuntimeError(
+                f"关键词“{args.keyword or '全站热门'}”在 {start_date} 至今没有通过相关性校验的结果"
+            )
         
         safe_kw = safe_filename_from_keyword(args.keyword)
         # 格式化输出
         if args.output_format == 'json':
-            output = json.dumps(format_as_json(data, args.max_items), ensure_ascii=False, indent=2)
+            output = json.dumps(json_result, ensure_ascii=False, indent=2)
             default_filename = f"{safe_kw}_爆款数据.json" if safe_kw else "爆款数据.json"
         else:  # html
-            output = format_as_html(data, args.max_items, args.start_date)
+            output = format_as_html(data, args.max_items, start_date)
             default_filename = f"{safe_kw}_爆款数据.html" if safe_kw else "爆款数据.html"
         
         # 写入文件或打印到标准输出
