@@ -1,8 +1,5 @@
 #!/usr/bin/env python3
-"""
-Fetch WeChat Official Account hot article data by sector keywords and
-generate daily JSON / Markdown / HTML reports with writing analysis.
-"""
+"""Fetch and analyze third-party WeChat hot-article snapshots by sector."""
 
 from __future__ import annotations
 
@@ -104,15 +101,18 @@ def fetch_no_sni(params: dict[str, str], timeout: int = 60) -> dict[str, Any]:
     }
 
     sock = socket.create_connection((host, 443), timeout=timeout)
-    context = ssl.SSLContext(ssl.PROTOCOL_TLS_CLIENT)
+    context = ssl.create_default_context()
     context.check_hostname = False
-    context.verify_mode = ssl.CERT_NONE
+    context.verify_mode = ssl.CERT_REQUIRED
     ssl_sock = context.wrap_socket(sock, server_hostname=None)
     try:
+        # The endpoint currently resets SNI connections. Keep the compatible
+        # no-SNI transport, but still verify the CA chain and hostname.
+        ssl.match_hostname(ssl_sock.getpeercert(), host)
         lines = [f"GET {request_path} HTTP/1.1"]
         lines.extend(f"{k}: {v}" for k, v in headers.items())
         lines.extend(["", ""])
-        ssl_sock.send("\r\n".join(lines).encode("utf-8"))
+        ssl_sock.sendall("\r\n".join(lines).encode("utf-8"))
 
         response = b""
         while True:
@@ -120,6 +120,8 @@ def fetch_no_sni(params: dict[str, str], timeout: int = 60) -> dict[str, Any]:
             if not chunk:
                 break
             response += chunk
+            if len(response) > 32 * 1024 * 1024:
+                raise RuntimeError("HTTP response exceeded 32 MiB")
     finally:
         ssl_sock.close()
 
@@ -127,7 +129,7 @@ def fetch_no_sni(params: dict[str, str], timeout: int = 60) -> dict[str, Any]:
     if " " not in first_line:
         raise RuntimeError("Invalid HTTP response")
     status = int(first_line.split()[1])
-    if status >= 400:
+    if status < 200 or status >= 300:
         raise RuntimeError(f"HTTP status {status}")
 
     header_end = response.find(b"\r\n\r\n")
@@ -141,7 +143,13 @@ def fetch_no_sni(params: dict[str, str], timeout: int = 60) -> dict[str, Any]:
             body = gzip.decompress(body)
         except Exception:
             pass
-    return json.loads(body.decode("utf-8", errors="ignore"))
+    try:
+        payload = json.loads(body.decode("utf-8"))
+    except (UnicodeDecodeError, json.JSONDecodeError) as exc:
+        raise RuntimeError(f"Invalid JSON response: {exc}") from exc
+    if not isinstance(payload, dict):
+        raise RuntimeError("Invalid response schema: root must be an object")
+    return payload
 
 
 def fetch_keyword(keyword: str, start_date: str | None, timeout: int) -> list[dict[str, Any]]:
@@ -149,16 +157,26 @@ def fetch_keyword(keyword: str, start_date: str | None, timeout: int) -> list[di
     if start_date:
         params["startDate"] = start_date
     data = fetch_no_sni(params, timeout=timeout)
-    result_data = data.get("data", {})
+    result_data = data.get("data")
+    if not isinstance(result_data, dict):
+        raise RuntimeError("Invalid response schema: missing object field 'data'")
     categories = [
         ("lowPowderExplosiveArticle", "低粉高阅读"),
         ("tenWReadingRank", "阅读靠前"),
         ("originalRank", "原创靠前"),
         ("oneWReadingRank", "数据增长中"),
     ]
+    if not any(key in result_data for key, _ in categories):
+        raise RuntimeError("Invalid response schema: no recognized ranking fields")
+
     items: list[dict[str, Any]] = []
     for key, category in categories:
-        for item in result_data.get(key, []) or []:
+        rows = result_data.get(key, []) or []
+        if not isinstance(rows, list):
+            raise RuntimeError(f"Invalid response schema: '{key}' must be an array")
+        for item in rows:
+            if not isinstance(item, dict):
+                continue
             item = dict(item)
             item["category"] = category
             item["matchedKeyword"] = keyword
@@ -193,7 +211,7 @@ def normalize_item(item: dict[str, Any]) -> dict[str, Any]:
         "clicksCount": item.get("clicksCount", "0"),
         "watchCount": item.get("watchCount", "0"),
     }
-    out["dataScore"] = score_item(out)
+    out["rankingRawScore"] = score_item(out)
     return out
 
 
@@ -210,42 +228,45 @@ def score_item(item: dict[str, Any]) -> float:
         + math.log10(comment + 1) * 14
         + math.log10(interactive + 1) * 10
     )
-    return round(min(100, score), 2)
+    return round(score, 4)
 
 
 def dedupe_and_rank(items: list[dict[str, Any]], max_items: int, keywords: list[str] | None = None) -> list[dict[str, Any]]:
     if keywords:
         relevant = [item for item in items if is_relevant_to_keywords(item, keywords)]
-        if relevant:
-            items = relevant
+        items = relevant
     seen: set[str] = set()
     deduped: list[dict[str, Any]] = []
-    for item in sorted(items, key=lambda x: x.get("dataScore", 0), reverse=True):
+    for item in sorted(items, key=lambda x: x.get("rankingRawScore", 0), reverse=True):
         key = item.get("photoId") or item.get("noteLink") or item.get("title")
         if key in seen:
             continue
         seen.add(str(key))
         deduped.append(item)
-    return deduped[:max_items]
+    ranked = deduped[:max_items]
+    if not ranked:
+        return ranked
+    raw_scores = [float(item.get("rankingRawScore", 0)) for item in ranked]
+    low, high = min(raw_scores), max(raw_scores)
+    for item, raw_score in zip(ranked, raw_scores):
+        item["dataScore"] = round(60.0 if high == low else 40.0 + 60.0 * (raw_score - low) / (high - low), 2)
+        item["scoreScope"] = "current_sector_relative_40_100"
+    return ranked
 
 
 def is_relevant_to_keywords(item: dict[str, Any], keywords: list[str]) -> bool:
-    haystack = f"{item.get('title', '')} {item.get('summary', '')}".lower()
-    terms: list[str] = []
-    broad_terms = {"ai", "人工智能", "科技", "内容", "写作"}
-    for keyword in keywords:
-        raw = str(keyword).strip()
-        if not raw:
-            continue
-        lowered = raw.lower()
-        if lowered not in broad_terms and len(raw) >= 2:
-            terms.append(lowered)
-        for token in re.findall(r"[A-Za-z][A-Za-z0-9.+#-]{1,}|[\u4e00-\u9fff]{2,}", raw):
-            token_lower = token.lower()
-            if token_lower not in broad_terms and len(token) >= 2:
-                terms.append(token_lower)
-    terms = sorted(set(terms), key=len, reverse=True)
-    return any(term in haystack for term in terms)
+    def normalize(value: Any) -> str:
+        return re.sub(r"[^a-z0-9\u4e00-\u9fff+#]+", "", str(value or "").lower())
+
+    haystack = normalize(f"{item.get('title', '')} {item.get('summary', '')}")
+    matched_keyword = str(item.get("matchedKeyword") or "").strip()
+    candidates = [matched_keyword] if matched_keyword else keywords
+    for keyword in candidates:
+        terms = [normalize(term) for term in re.findall(r"[A-Za-z0-9+#.]+|[\u4e00-\u9fff]+", str(keyword))]
+        terms = [term for term in terms if term]
+        if terms and all(term in haystack for term in terms):
+            return True
+    return False
 
 
 def parse_sector_args(raw: list[str] | None) -> dict[str, list[str]]:
@@ -655,6 +676,13 @@ def build_html(report: dict[str, Any]) -> str:
     top_reads, top_shares, _ = top_metric_items(all_items)
     top_read_text = display_count(top_reads.get("clicksCount")) if top_reads else "0"
     top_share_text = str(parse_count(top_shares.get("shareCount"))) if top_shares else "0"
+    status = report.get("status", "success")
+    warning = ""
+    if status == "partial":
+        failed = report.get("requestSummary", {}).get("failed", 0)
+        warning = f'<div class="warning">部分数据源请求失败（{failed} 次）。以下报告只基于成功返回的数据，详见 data.json。</div>'
+    elif status == "empty":
+        warning = '<div class="warning">数据源请求成功，但严格相关性过滤后没有可用文章。未用无关热门文章补位。</div>'
     return f"""<!doctype html>
 <html lang="zh-CN">
 <head>
@@ -739,6 +767,7 @@ h3{{font-size:18px;margin:0 0 16px;letter-spacing:0}}
 .structure{{margin:16px 0 0;padding-left:22px;color:#3b3832}}
 .empty,.muted{{color:var(--muted)}}
 .footer{{margin-top:34px;padding-top:20px;border-top:1px solid var(--line);color:var(--muted);font-size:13px}}
+.warning{{margin:0 0 20px;padding:12px 14px;border:1px solid #d97706;background:#fffbeb;color:#92400e;border-radius:8px}}
 @media (max-width: 820px){{
   .hero,.section-head{{display:block}}
   h1{{font-size:34px}}
@@ -750,11 +779,12 @@ h3{{font-size:18px;margin:0 0 16px;letter-spacing:0}}
 </head>
 <body>
 <main class="page">
+  {warning}
   <header class="hero">
     <div>
       <p class="eyebrow">WeChat Hot Article Radar</p>
       <h1>爆款文章分析</h1>
-      <p>数据窗口：{esc(report["startDate"])} 至 {esc(report["reportDate"])}。阅读、点赞、分享、评论来自公众号爆款文章洞察接口快照，适合做趋势判断和写作参考。</p>
+      <p>数据窗口：{esc(report["startDate"])} 至 {esc(report["reportDate"])}。阅读、点赞、分享、评论来自第三方公众号热点接口快照；写作风格与爆款原因是本地规则推断，不是平台事实。</p>
     </div>
     <div class="summary-grid">
       <div class="summary-card"><span>赛道数</span><strong>{sector_count}</strong><small>本次分析范围</small></div>
@@ -770,7 +800,7 @@ h3{{font-size:18px;margin:0 0 16px;letter-spacing:0}}
 </html>"""
 
 
-def main() -> None:
+def main() -> int:
     parser = argparse.ArgumentParser(description="Fetch and analyze WeChat hot articles by sector.")
     parser.add_argument("--sector", action="append", help="Sector spec: 赛道=关键词1,关键词2. Can repeat.")
     parser.add_argument("--sector-config", help="JSON file: {\"赛道\": [\"关键词\"]}.")
@@ -782,25 +812,47 @@ def main() -> None:
     parser.add_argument("--timeout", type=int, default=60)
     args = parser.parse_args()
 
+    if args.days < 1:
+        parser.error("--days must be at least 1")
+    if args.max_items_per_sector < 1:
+        parser.error("--max-items-per-sector must be at least 1")
+    if args.timeout < 1:
+        parser.error("--timeout must be at least 1")
+
     config = load_sector_config(args.sector_config) or parse_sector_args(args.sector)
     report_date = dt.date.fromisoformat(args.report_date)
-    start_date = args.start_date or (report_date - dt.timedelta(days=max(1, args.days))).isoformat()
+    start_date_obj = dt.date.fromisoformat(args.start_date) if args.start_date else report_date - dt.timedelta(days=args.days)
+    if start_date_obj > report_date:
+        parser.error("--start-date cannot be after --report-date")
+    start_date = start_date_obj.isoformat()
 
     report: dict[str, Any] = {
         "reportDate": report_date.isoformat(),
         "startDate": start_date,
         "generatedAt": dt.datetime.now().isoformat(timespec="seconds"),
         "source": SOURCE,
+        "sourceKind": "third_party_snapshot",
+        "analysisKinds": {
+            "metrics": "observed_from_source_snapshot",
+            "writingStyle": "heuristic_inference",
+            "hotReason": "heuristic_inference",
+        },
         "sectors": [],
     }
 
+    attempted = 0
+    succeeded = 0
+    failed = 0
     for name, keywords in config.items():
         all_items: list[dict[str, Any]] = []
         errors: list[str] = []
         for keyword in keywords:
+            attempted += 1
             try:
                 all_items.extend(fetch_keyword(keyword, start_date, timeout=args.timeout))
+                succeeded += 1
             except Exception as exc:
+                failed += 1
                 errors.append(f"{keyword}: {exc}")
         items = dedupe_and_rank(all_items, args.max_items_per_sector, keywords)
         report["sectors"].append({
@@ -808,18 +860,28 @@ def main() -> None:
             "keywords": keywords,
             "items": items,
             "errors": errors,
+            "status": "error" if len(errors) == len(keywords) else ("partial" if errors else ("success" if items else "empty")),
         })
+
+    total_items = sum(len(sector["items"]) for sector in report["sectors"])
+    report["requestSummary"] = {"attempted": attempted, "succeeded": succeeded, "failed": failed}
+    report["status"] = "error" if succeeded == 0 else ("partial" if failed else ("success" if total_items else "empty"))
 
     out_root = Path(args.output_dir).expanduser().resolve() / report_date.isoformat()
     out_root.mkdir(parents=True, exist_ok=True)
     json_path = out_root / "data.json"
     html_path = out_root / "report.html"
     json_path.write_text(json.dumps(report, ensure_ascii=False, indent=2), encoding="utf-8")
-    html_path.write_text(build_html(report), encoding="utf-8")
-
     print(f"Saved JSON: {json_path}")
+
+    if report["status"] == "error":
+        print("No HTML report generated because every data request failed.")
+        return 1
+
+    html_path.write_text(build_html(report), encoding="utf-8")
     print(f"Saved HTML: {html_path}")
+    return 0
 
 
 if __name__ == "__main__":
-    main()
+    raise SystemExit(main())
