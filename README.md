@@ -122,13 +122,13 @@ Huahai Creator Buddy 基于开放的 Agent Skills 协议，可在任何 skills-c
 打开你正在用的 agent，告诉它：
 
 ```text
-帮我安装这个 skill：https://github.com/huahaimaker/creator-buddy-skills
+帮我安装这个 skill：https://github.com/huahaimaker/huahai-creator-buddy-skills
 ```
 
 或者用通用 CLI 安装器（vercel-labs/skills，支持多 runtime）：
 
 ```bash
-npx skills add huahaimaker/creator-buddy-skills
+npx skills add huahaimaker/huahai-creator-buddy-skills
 ```
 
 它会自动识别当前 runtime 并放到正确目录。需要指定时加 `-a codex` / `-a claude-code` / `-a cursor`。
@@ -138,7 +138,7 @@ npx skills add huahaimaker/creator-buddy-skills
 克隆仓库，把需要的 skill 目录复制到你的 runtime skills 目录：
 
 ```bash
-git clone https://github.com/huahaimaker/creator-buddy-skills.git
+git clone https://github.com/huahaimaker/huahai-creator-buddy-skills.git
 ```
 
 仓库结构：
