@@ -3,7 +3,7 @@
 const constants = require("../config/constants");
 const log = require("../utils/log");
 const utils = require("../utils/utils");
-const { parseArgs, pick } = require("../utils/args");
+const { parseArgs, pick, unknownOptions } = require("../utils/args");
 const cli = require("../utils/cli");
 const platformClient = require("../platforms/agentReach");
 
@@ -27,10 +27,10 @@ function printHelp() {
   node src/xiaohongshu/search-cli.js --platform douyin --keyword "AI 编程"
 
 说明:
-  - 小红书通过 Agent Reach 检测到的 OpenCLI / xiaohongshu-mcp / xhs-cli 后端访问。
-  - B站优先使用 bili-cli / OpenCLI，缺省时使用 B站公开搜索 API。
-  - 抖音当前需要设置 DOUYIN_COMMAND 指向本地只读 CLI；Agent Reach 暂未提供抖音 channel。
-  - 默认优先使用 Agent Reach；Agent Reach 小红书后端不可用时，可配置 GUAIKEI_API_TOKEN 兜底。
+  - 小红书直接尝试 OpenCLI / xiaohongshu-mcp / xhs-cli，最后可用 Guaikei 兜底。
+  - B站依次尝试 bili / OpenCLI / B站公开搜索 API。
+  - 抖音仅使用 DOUYIN_COMMAND 指向的用户自备只读 CLI。
+  - JSON 模式 stdout 只有一个对象；参数错误退出 2，后端错误退出 1。
 `);
 }
 
@@ -50,6 +50,12 @@ async function main() {
   let limit;
   let output;
   try {
+    const unknown = unknownOptions(parsed, ["--platform", "-p", "--keyword", "-k", "--type", "-t", "--sort", "-s", "--time", "-i", "--limit", "-l", "--output", "-o", "--help", "-h"]);
+    if (unknown.length) throw new cli.UsageError(`未知参数: ${unknown.join(", ")}`);
+    if (parsed._.length > 1) throw new cli.UsageError("只能提供一个位置关键词");
+    if ((parsed["--keyword"] !== undefined || parsed["-k"] !== undefined) && parsed._.length) {
+      throw new cli.UsageError("关键词请使用位置参数或 --keyword，不能同时提供");
+    }
     platform = cli.platform(pick(parsed, ["--platform", "-p"], "xiaohongshu"));
     keyword = cli.nonEmpty(pick(parsed, ["--keyword", "-k"], parsed._[0] || ""), "关键词", 100);
     type = cli.integer(pick(parsed, ["--type", "-t"], 0), "内容类型", 0, 2);

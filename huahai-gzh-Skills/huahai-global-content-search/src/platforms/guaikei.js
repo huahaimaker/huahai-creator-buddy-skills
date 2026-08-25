@@ -6,7 +6,7 @@ function getToken() {
   const token = (process.env.GUAIKEI_API_TOKEN || "").trim();
   if (!token) {
     throw new Error(
-      "Agent Reach 当前没有可用的小红书后端。若要使用 Guaikei API 兜底，请配置环境变量 GUAIKEI_API_TOKEN 后重试。",
+      "当前没有可用的小红书本地后端。若要使用 Guaikei API 兜底，请配置环境变量 GUAIKEI_API_TOKEN 后重试。",
     );
   }
   if (!/^[0-9a-fA-F]{32}$/.test(token)) {

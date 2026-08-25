@@ -19,7 +19,11 @@ function runCommand(command, args, options = {}) {
   if (result.status !== 0) {
     throw new Error(`${command} 返回非 0 状态: ${result.status}\n${result.stderr || result.stdout}`);
   }
-  return (result.stdout || "").trim();
+  const output = (result.stdout || "").trim();
+  if (!output && options.allowEmpty !== true) {
+    throw new Error(`${command} 返回空输出`);
+  }
+  return output;
 }
 
 function hasMcporterServer(name) {
@@ -317,8 +321,17 @@ async function detailBilibili(input) {
       await getJson("https://api.bilibili.com/x/web-interface/view?bvid=" + encodeURIComponent(bvid)),
       "详情",
     );
-    if (!data.data || typeof data.data !== "object") {
-      throw new Error("B站详情返回结构无效: 缺少 data 对象");
+    if (
+      !data.data ||
+      typeof data.data !== "object" ||
+      typeof data.data.bvid !== "string" ||
+      !data.data.bvid ||
+      typeof data.data.title !== "string" ||
+      !data.data.title ||
+      !data.data.owner ||
+      data.data.owner.mid === undefined
+    ) {
+      throw new Error("B站详情返回结构无效: 缺少 bvid、title 或 owner.mid");
     }
     return { backend: "bilibili-public-api", raw: JSON.stringify(data, null, 2) };
   } catch (error) {

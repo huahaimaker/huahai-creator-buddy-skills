@@ -3,7 +3,7 @@
 const constants = require("../config/constants");
 const log = require("../utils/log");
 const utils = require("../utils/utils");
-const { parseArgs, pick } = require("../utils/args");
+const { parseArgs, pick, unknownOptions } = require("../utils/args");
 const cli = require("../utils/cli");
 const platformClient = require("../platforms/agentReach");
 
@@ -24,8 +24,9 @@ function printHelp() {
   node src/xiaohongshu/post-cli.js --platform douyin --url "https://www.douyin.com/user/xxx"
 
 说明:
-  - 小红书用户作品目前需要 Agent Reach 的 OpenCLI 小红书后端。
-  - 默认优先使用 Agent Reach；Agent Reach 小红书后端不可用时，可配置 GUAIKEI_API_TOKEN 兜底。
+  - 小红书账号作品只尝试 OpenCLI 或 Guaikei；MCP/xhs-cli 不代表该能力可用。
+  - B站账号作品依次尝试 bili 和 yt-dlp。
+  - 抖音仅使用 DOUYIN_COMMAND 指向的用户自备只读 CLI。
 `);
 }
 
@@ -42,6 +43,12 @@ async function main() {
   let limit;
   let output;
   try {
+    const unknown = unknownOptions(parsed, ["--platform", "-p", "--url", "-u", "--limit", "-l", "--output", "-o", "--help", "-h"]);
+    if (unknown.length) throw new cli.UsageError(`未知参数: ${unknown.join(", ")}`);
+    if (parsed._.length > 1) throw new cli.UsageError("只能提供一个位置主页链接或 ID");
+    if ((parsed["--url"] !== undefined || parsed["-u"] !== undefined) && parsed._.length) {
+      throw new cli.UsageError("主页链接或 ID 请使用位置参数或 --url，不能同时提供");
+    }
     platform = cli.platform(pick(parsed, ["--platform", "-p"], "xiaohongshu"));
     url = cli.nonEmpty(pick(parsed, ["--url", "-u"], parsed._[0] || ""), "主页链接或 ID");
     limit = cli.integer(pick(parsed, ["--limit", "-l"], 20), "作品数量", 1, 1000);

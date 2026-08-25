@@ -7,7 +7,7 @@ function parseArgs(args) {
       continue;
     }
     const next = args[i + 1];
-    if (next && !next.startsWith("-")) {
+    if (next && (!next.startsWith("-") || /^-\d+(?:\.\d+)?$/.test(next))) {
       parsed[arg] = next;
       i += 1;
     } else {
@@ -15,6 +15,11 @@ function parseArgs(args) {
     }
   }
   return parsed;
+}
+
+function unknownOptions(parsed, allowed) {
+  const allowedSet = new Set(allowed);
+  return Object.keys(parsed).filter((key) => key !== "_" && !allowedSet.has(key));
 }
 
 function pick(parsed, names, fallback = "") {
@@ -29,4 +34,5 @@ function pick(parsed, names, fallback = "") {
 module.exports = {
   parseArgs,
   pick,
+  unknownOptions,
 };

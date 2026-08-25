@@ -1,12 +1,12 @@
 {
   "name": "huahai-global-content-search",
   "version": "2.0.0",
-  "description": "全域内容搜索：优先基于 Agent Reach / 本地平台后端访问小红书、B站和抖音扩展入口，小红书支持 Guaikei API 兜底。",
+  "description": "只读统一 CLI：按具体能力探测小红书、B站和用户自备抖音后端，失败时返回机器可读错误。",
   "keywords": [
     "小红书",
     "B站",
     "抖音",
-    "Agent Reach",
+    "OpenCLI",
     "Guaikei",
     "爆款笔记",
     "市场调研",

@@ -98,13 +98,13 @@ Guaikei API 兜底支持小红书关键词搜索、笔记详情/评论、博主�
 
 关键词搜索与详情优先级：
 
-1. `bili-cli`
+1. `bili` 命令（输出中标记为 `bili-cli`）
 2. `opencli bilibili`
 3. B站公开搜索/详情 API
 
 账号作品优先级：
 
-1. `bili-cli`
+1. `bili` 命令（输出中标记为 `bili-cli`）
 2. `yt-dlp` 的 `BilibiliSpaceVideo` extractor
 
 B站公开 API 必须同时满足 HTTP 2xx、业务 `code === 0` 和所需字段存在，才视为成功。

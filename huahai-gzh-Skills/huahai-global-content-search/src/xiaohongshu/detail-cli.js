@@ -3,7 +3,7 @@
 const constants = require("../config/constants");
 const log = require("../utils/log");
 const utils = require("../utils/utils");
-const { parseArgs, pick } = require("../utils/args");
+const { parseArgs, pick, unknownOptions } = require("../utils/args");
 const cli = require("../utils/cli");
 const platformClient = require("../platforms/agentReach");
 
@@ -25,7 +25,9 @@ function printHelp() {
 
 说明:
   - 小红书详情仍建议使用搜索结果里的完整 URL，包含 xsec_token。
-  - 默认优先使用 Agent Reach；Agent Reach 小红书后端不可用时，可配置 GUAIKEI_API_TOKEN 兜底。
+  - 小红书直接尝试可用本地后端，最后可用 GUAIKEI_API_TOKEN 兜底。
+  - B站依次尝试 bili / OpenCLI / 公开详情 API；公开 API 会核验业务码和必要字段。
+  - 抖音仅使用 DOUYIN_COMMAND 指向的用户自备只读 CLI。
 `);
 }
 
@@ -42,6 +44,12 @@ async function main() {
   let limit;
   let output;
   try {
+    const unknown = unknownOptions(parsed, ["--platform", "-p", "--url", "-u", "--limit", "-l", "--output", "-o", "--help", "-h"]);
+    if (unknown.length) throw new cli.UsageError(`未知参数: ${unknown.join(", ")}`);
+    if (parsed._.length > 1) throw new cli.UsageError("只能提供一个位置链接或 ID");
+    if ((parsed["--url"] !== undefined || parsed["-u"] !== undefined) && parsed._.length) {
+      throw new cli.UsageError("链接或 ID 请使用位置参数或 --url，不能同时提供");
+    }
     platform = cli.platform(pick(parsed, ["--platform", "-p"], "xiaohongshu"));
     url = cli.nonEmpty(pick(parsed, ["--url", "-u"], parsed._[0] || ""), "链接或 ID");
     limit = cli.integer(pick(parsed, ["--limit", "-l"], 0), "评论数量", 0, 1000);
