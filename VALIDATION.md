@@ -47,7 +47,7 @@ npx skills add . --list --full-depth
 | 视频详情 `BV1X8oKBLEdj` | `verified-live` | `bilibili-public-api` | 最终修订后复测：业务码 0，`bvid/title/owner.mid` 完整 |
 | UP 主 `38061207` 作品 | `verified-live` | `yt-dlp BilibiliSpaceVideo` | 首次被服务端 412 拦截并正确退出 1；单次重试成功 |
 
-确定性 CLI 合同共 12 组：缺参数、负数 limit、未知参数、额外位置参数、空/成功后端、stdout JSON、退出码、目标 stderr 脱敏和落盘日志脱敏。脱敏 fixture 覆盖普通/编码参数名、YAML、shell、数组及嵌套 raw JSON，并真实写入临时文件确认 secret 不落盘。
+确定性 CLI 合同共 12 组：缺参数、负数 limit、未知参数、额外位置参数、空/成功后端、stdout JSON、退出码、目标 stderr 脱敏和落盘日志脱敏。脱敏 fixture 覆盖普通/多重编码参数名、畸形百分号并存、YAML、shell、数组及嵌套 raw JSON，并真实写入临时文件确认 secret 不落盘。
 
 ### 公众号数据
 
