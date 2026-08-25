@@ -58,7 +58,7 @@ def inline(text: str) -> str:
 def pick_style(requested: str, source: str) -> str:
     if requested != "auto":
         return requested
-    if "```" in source or re.search(r"\b(API|CLI|代码|教程|开发)\b", source, re.I):
+    if "```" in source or re.search(r"\b(API|CLI)\b", source, re.I) or re.search(r"代码|教程|开发|技术", source):
         return "openai"
     if re.search(r"^\s*\|.+\|\s*$", source, re.M) or len(re.findall(r"^\s*[-*]\s+", source, re.M)) >= 5:
         return "google"
@@ -81,8 +81,21 @@ def split_frontmatter(source: str) -> tuple[str, dict[str, str]]:
         end = next(index for index in range(1, len(lines)) if lines[index].strip() == "---")
     except StopIteration:
         return source, {}
+    candidate = lines[1:end]
+    top_level_key = re.compile(r"^[A-Za-z0-9_-]+:\s*.*$")
+    has_key = any(top_level_key.match(line) for line in candidate)
+    yaml_like = all(
+        not line.strip()
+        or line.lstrip().startswith("#")
+        or bool(top_level_key.match(line))
+        or bool(re.match(r"^\s+\S.*$", line))
+        or bool(re.match(r"^-\s+\S.*$", line))
+        for line in candidate
+    )
+    if not has_key or not yaml_like:
+        return source, {}
     metadata: dict[str, str] = {}
-    for line in lines[1:end]:
+    for line in candidate:
         match = re.match(r"^([A-Za-z0-9_-]+):\s*(.*?)\s*$", line)
         if match:
             metadata[match.group(1)] = match.group(2).strip('"\'')
@@ -260,8 +273,11 @@ def main() -> None:
     if "{{TITLE}}" in page or "{{ARTICLE_HTML}}" in page:
         fail("template placeholders were not fully replaced", 1)
 
-    output_path.parent.mkdir(parents=True, exist_ok=True)
-    output_path.write_text(page, encoding="utf-8")
+    try:
+        output_path.parent.mkdir(parents=True, exist_ok=True)
+        output_path.write_text(page, encoding="utf-8")
+    except OSError as exc:
+        fail(f"cannot write output: {exc}", 1)
     metadata = {
         "status": "success",
         "output": str(output_path),

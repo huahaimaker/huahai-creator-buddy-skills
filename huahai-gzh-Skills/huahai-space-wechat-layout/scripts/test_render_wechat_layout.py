@@ -41,13 +41,36 @@ def main() -> None:
         assert "metadata-not-body" not in page
         assert "<script>" not in page.split('data-wechat-article="true"', 1)[1].split("</section>", 1)[0]
 
+        chinese = work / "chinese.md"
+        chinese.write_text("# 技术教程\n\n这是一篇纯中文开发教程。\n", encoding="utf-8")
+        chinese_result = run("--input", str(chinese), "--output", str(work / "chinese.html"), "--style", "auto")
+        assert chinese_result.returncode == 0
+        assert json.loads(chinese_result.stdout)["style"] == "openai"
+
+        ordinary = work / "ordinary.md"
+        ordinary.write_text("---\n这不是 YAML，而是正文。\n---\n\n后续正文不能丢。\n", encoding="utf-8")
+        ordinary_output = work / "ordinary.html"
+        ordinary_result = run("--input", str(ordinary), "--output", str(ordinary_output))
+        assert ordinary_result.returncode == 0
+        ordinary_payload = json.loads(ordinary_result.stdout)
+        ordinary_page = ordinary_output.read_text(encoding="utf-8")
+        assert ordinary_payload["frontmatter_removed"] is False
+        assert "这不是 YAML" in ordinary_page and "后续正文不能丢" in ordinary_page
+
         empty = work / "empty.md"
         empty.write_text("\n", encoding="utf-8")
         failed = run("--input", str(empty), "--output", str(work / "empty.html"))
         assert failed.returncode == 2
         assert json.loads(failed.stdout)["status"] == "error"
 
-    print(json.dumps({"status": "success", "tests": 2}, ensure_ascii=False))
+        blocker = work / "blocker"
+        blocker.write_text("file", encoding="utf-8")
+        unwritable = run("--input", str(source), "--output", str(blocker / "index.html"))
+        assert unwritable.returncode == 1
+        lines = [line for line in unwritable.stdout.splitlines() if line.strip()]
+        assert len(lines) == 1 and json.loads(lines[0])["status"] == "error"
+
+    print(json.dumps({"status": "success", "tests": 5}, ensure_ascii=False))
 
 
 if __name__ == "__main__":
