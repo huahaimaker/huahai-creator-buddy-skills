@@ -61,7 +61,7 @@ async function main() {
 
   utils.printBanner();
   utils.printInfo(`平台: ${platform}`);
-  utils.printInfo(`目标: ${url}`);
+  utils.printInfo(`目标: ${log.redactSensitive(url)}`);
   utils.printInfo(`评论数量限制: ${limit}`);
 
   try {

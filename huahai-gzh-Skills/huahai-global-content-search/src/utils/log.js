@@ -2,6 +2,13 @@ const fs = require("fs");
 const path = require("path");
 const utils = require("./utils");
 
+function redactSensitive(value) {
+  return String(value)
+    .replace(/("xsec_token"\s*:\s*")[^"]*(")/gi, "$1[REDACTED]$2")
+    .replace(/((?:[?&]|\b)xsec_token=)[^&#\s"'\\]*/gi, "$1[REDACTED]")
+    .replace(/(xsec_token%3D)[^%&\s"'\\]*/gi, "$1[REDACTED]");
+}
+
 async function taskWrite(filename, content) {
   const configuredDir = (process.env.HUAHAI_SEARCH_LOG_DIR || "").trim();
   if (!configuredDir) {
@@ -12,7 +19,7 @@ async function taskWrite(filename, content) {
 
   try {
     await fs.promises.mkdir(path.dirname(outputFilename), { recursive: true });
-    await fs.promises.writeFile(outputFilename, content);
+    await fs.promises.writeFile(outputFilename, redactSensitive(content));
     utils.printSuccess(`  → 已保存到 ${outputFilename}`);
     return outputFilename;
   } catch (error) {
@@ -22,5 +29,6 @@ async function taskWrite(filename, content) {
 }
 
 module.exports = {
+  redactSensitive,
   taskWrite,
 };

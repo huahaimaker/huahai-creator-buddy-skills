@@ -60,7 +60,7 @@ async function main() {
 
   utils.printBanner();
   utils.printInfo(`平台: ${platform}`);
-  utils.printInfo(`主页/用户: ${url}`);
+  utils.printInfo(`主页/用户: ${log.redactSensitive(url)}`);
   utils.printInfo(`作品数量限制: ${limit}`);
 
   try {
