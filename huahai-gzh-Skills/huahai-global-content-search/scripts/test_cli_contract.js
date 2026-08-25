@@ -65,6 +65,15 @@ assert.strictEqual(safeTarget.result.status, 0);
 assert.ok(!safeTarget.result.stderr.includes(targetSecret));
 assert.match(safeTarget.result.stderr, /\[REDACTED\]/);
 
+const encodedSecret = "encoded-stderr-secret";
+const encodedTarget = invoke(detail, [
+  "--platform", "douyin",
+  "--url", `https://www.xiaohongshu.com/a?xsec%255Ftoken=${encodedSecret}`,
+], { DOUYIN_COMMAND: "/bin/echo" });
+assert.strictEqual(encodedTarget.result.status, 0);
+assert.ok(!encodedTarget.result.stderr.includes(encodedSecret));
+assert.match(encodedTarget.result.stderr, /\[REDACTED\]/);
+
 async function verifyRedactedLogs() {
   const secret = "token-should-not-be-logged";
   const sample = JSON.stringify({
@@ -75,6 +84,7 @@ async function verifyRedactedLogs() {
     shell: `xsec_token = shell-${secret}`,
     array: { xsec_token: [`array-${secret}`, "second"] },
     encoded: `https://example.com/a?xsec_token%3Dencoded-${secret}%2Fdef`,
+    encodedName: `https://example.com/a?xsec%255Ftoken=encoded-name-${secret}`,
   });
   const redacted = log.redactSensitive(sample);
   assert.ok(!redacted.includes(secret));

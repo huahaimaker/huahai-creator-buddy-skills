@@ -3,7 +3,18 @@ const path = require("path");
 const utils = require("./utils");
 
 function redactPlainText(value) {
-  return String(value)
+  let text = String(value);
+  for (let index = 0; index < 3; index += 1) {
+    let decoded;
+    try {
+      decoded = decodeURIComponent(text);
+    } catch (_) {
+      break;
+    }
+    if (decoded === text) break;
+    text = decoded;
+  }
+  return text
     .replace(/("xsec_token"\s*:\s*)\[[^\]\r\n]*\]/gi, '$1["[REDACTED]"]')
     .replace(/("xsec_token"\s*:\s*")[^"]*(")/gi, "$1[REDACTED]$2")
     .replace(/((?:[?&]|\b)xsec_token=)[^&#\s"'\\]*/gi, "$1[REDACTED]")
