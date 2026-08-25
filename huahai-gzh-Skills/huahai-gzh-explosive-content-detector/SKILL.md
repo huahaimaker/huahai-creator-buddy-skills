@@ -1,10 +1,11 @@
 ---
 name: huahai-gzh-explosive-content-detector
 description: 为公众号文章创作打造的专业数据洞察工具。全网持续收录每日爆款文章，收录依据：低粉高阅读、阅读靠前、数据增长中、原创靠前，助力号主获取数据参考。
-dependency:
-  python:
-    - requests>=2.28.0
-  system:
+metadata:
+  dependencies:
+    python:
+      - requests>=2.28.0
+    system: []
 ---
 
 # 公众号爆款文章查询

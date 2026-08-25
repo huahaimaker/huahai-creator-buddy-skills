@@ -1,6 +1,6 @@
 ---
 name: huahai-space-xhs-buddy
-description: 小红书创作总控台。判断用户当前卡在哪一环，路由到对应的专项技能，并把多步骤工作流串起来执行。当用户说"做小红书""帮我运营小红书""小红书从头到尾走一遍""我想开始做小红书""小红书全流程""不知道从哪下手""帮我搞小红书"，或同时提出跨多个环节的需求（如"帮我想选题顺便写出来配好图"）时触发。单一环节的需求应直接使用对应专项技能，不必经过本技能。
+description: 小红书创作总控台。判断用户当前卡在哪一环，路由到对应的专项技能，并把多步骤工作流串起来执行。当用户说"做小红书""帮我运营小红书""小红书从头到尾走一遍""我想开始做小红书""小红书全流程""不知道从哪下手""帮我搞小红书"，或同时提出跨多个环节的需求（如"帮我想选题顺便写出来"）时触发。单一环节的需求应直接使用对应专项技能，不必经过本技能。
 ---
 
 # 小红书创作总控（huahai-space-xhs-buddy）
@@ -11,7 +11,7 @@ description: 小红书创作总控台。判断用户当前卡在哪一环，路�
 
 ---
 
-## 八个专项技能与各自的边界
+## 六个专项技能与各自的边界
 
 | 技能 | 干什么 | 不干什么 |
 |---|---|---|
@@ -19,15 +19,10 @@ description: 小红书创作总控台。判断用户当前卡在哪一环，路�
 | `huahai-space-xhs-hotspot` | 热点选题：拉近期高互动笔记、判趋势、爆款共性提取、跨赛道对比、出选题卡 | 不写正文、不起标题 |
 | `huahai-space-xhs-title` | 标题：15 种小红书方法批量出候选、评分、合规校验、A/B 建议 | 不写正文 |
 | `huahai-space-xhs-writer` | 正文：7 种笔记类型、开头 3 行、标签策略、合规改写、发布前 14 项体检 | 不做标题矩阵、不出图 |
-| `huahai-xhs-html` | 小红书多页图文（**排版型**）：把内容拆成 6 张以上 3:4 HTML 卡片，支持 62 种风格，中文精确可编辑 | 不生成位图插画 |
-| `huahai-space-xhs-image` | 封面与内页（**生图型**）：调用 Codex 内置生图模型，制作白底紫绿科技感 3:4 信息图 | 不提供可编辑 HTML |
 | `huahai-space-xhs-account-audit` | 账号体检：八维打分、竞品对标、卡点定位 | 不做单篇数据复盘 |
 | `huahai-space-xhs-note-analytics` | 笔记复盘：六层漏斗归因、多篇横向找规律 | 不做账号整体诊断 |
 
-**两组最容易串台的**：
-
-1. **账号级 vs 笔记级**：问"我的号为什么不涨粉"→ `account-audit`；问"这条为什么没流量"→ `note-analytics`。
-2. **两个图文技能**：需要可编辑、文字确定的完整图文，走 `huahai-xhs-html`；需要模型直接生成科技感位图，走 `huahai-space-xhs-image`。用户提供参考图并说“做类似这种图片”时，优先走 `huahai-space-xhs-image`。
+**最容易串台的一组**：账号级 vs 笔记级。问"我的号为什么不涨粉"→ `account-audit`；问"这条为什么没流量"→ `note-analytics`。
 
 ---
 
@@ -39,15 +34,13 @@ description: 小红书创作总控台。判断用户当前卡在哪一环，路�
 |---|---|---|
 | "想做小红书但不知道做什么" / 只丢来一段自我介绍 | 还没定位 | `positioning` |
 | "定位有了，不知道写什么" | 缺选题 | `hotspot` |
-| "有素材/有想法，要变成笔记" | 生产 | `writer` → `title` → `huahai-xhs-html` 或 `huahai-space-xhs-image` |
+| "有素材/有想法，要变成笔记" | 生产 | `writer` → `title` |
 | "标题不行 / 没人点" | 单点优化 | `title`（先确认是 CTR 低还是曝光就低） |
-| "封面不好看 / 想统一风格" | 单点优化 | `huahai-xhs-html` |
-| "想要科技感生图/参考图做类似风格" / "用 Codex 生图" | 视觉生产 | `huahai-space-xhs-image` |
 | "发了没数据 / 这条为什么不行" | 单篇复盘 | `note-analytics` |
 | "号做了一阵没起色 / 帮我看看主页" | 账号体检 | `account-audit` |
 | "想拆解某个博主 / 竞品" | 对标 | `account-audit` |
 
-**分流前必问的一个问题**：如果用户还没发过任何笔记，却来问标题或封面 —— 先拉回 `positioning`。没有定位的标题优化是无效功。
+**分流前必问的一个问题**：如果用户还没发过任何笔记，却来问标题 —— 先拉回 `positioning`。没有定位的标题优化是无效功。
 
 ---
 
@@ -58,24 +51,23 @@ description: 小红书创作总控台。判断用户当前卡在哪一环，路�
 ### 链 A：从零起号（用户没做过小红书）
 
 ```
-positioning ──► hotspot ──► writer ──► title ──► huahai-xhs-html / huahai-space-xhs-image ──► 发布
-     │                                                        │
-     └──────────── 累计 20-30 篇后 ────► account-audit ◄───────┘
+positioning ──► hotspot ──► writer ──► title ──► 发布
+     │                                      │
+     └──── 累计 20-30 篇后 ──► account-audit ◄──┘
 ```
 
 1. `positioning` 走完 7 步，产出定位句 + 内容支柱 + 前 20 篇选题
 2. 从前 20 篇里挑第 1 篇，用 `hotspot` 验证这个方向近期有没有流量、找对标笔记
 3. `writer` 写正文（此时定位和对标都已在手，正文质量最高）
 4. `title` 基于正文出标题矩阵
-5. 根据交付格式选择 `huahai-xhs-html` 或 `huahai-space-xhs-image`
-6. 发布后攒够数据 → `note-analytics` 单篇复盘；攒够 20-30 篇 → `account-audit` 复诊
+5. 发布后攒够数据 → `note-analytics` 单篇复盘；攒够 20-30 篇 → `account-audit` 复诊
 
 **停顿点**：第 1 步结束必须让用户确认定位；第 3 步结束必须让用户补真实细节（`writer` 会标 `[此处需你补真实细节]`，不要替他编）。
 
 ### 链 B：日常产出（定位已定，出一篇笔记）
 
 ```
-hotspot ──► writer ──► title ──► huahai-xhs-html / huahai-space-xhs-image
+hotspot ──► writer ──► title
 ```
 
 最常用的一条。`hotspot` 的选题卡可以整条粘给 `writer`。
@@ -87,7 +79,7 @@ hotspot ──► writer ──► title ──► huahai-xhs-html / huahai-spac
 ```
                  ┌─ 曝光就低 ──────────► account-audit（标签/定位/权重问题）
 note-analytics ──┤
-                 ├─ 曝光够但 CTR 低 ───► title + huahai-xhs-html / huahai-space-xhs-image
+                 ├─ 曝光够但 CTR 低 ───► title（优化首屏文案与标题）
                  └─ 点击够但互动低 ───► writer（开头留人/价值兑现）
 ```
 
@@ -108,7 +100,7 @@ env | grep -E '^(REDFOX_API_KEY|SOCIALDATAX_API_KEY|GUAIKEI_API_TOKEN)=' | sed '
 | 有任一 Key | `hotspot` 能拉真实互动数据，`account-audit` 能量化分析 |
 | 都没有 | 两者降级为 WebSearch / 截图定性路径，**仍可用**，但拿不到互动数。此时禁止编造互动量级，结论要标注"未经数据验证" |
 
-其余技能可直接使用。`huahai-xhs-html` 的 HTML 渲染链路依赖 playwright + 本机 Chrome，`note-analytics` 的表格处理依赖 pandas；`huahai-space-xhs-image` 直接调用 Codex 内置 `image_gen`，不需要 API Key 或外部生图后端。
+其余技能可直接使用。`note-analytics` 的表格处理依赖 pandas。
 
 ---
 

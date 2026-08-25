@@ -477,7 +477,6 @@ huahai-space-xhs-positioning（本 skill：定方向）
         ├─→ huahai-space-xhs-hotspot        找选题、验证赛道热度、补充选题池
         ├─→ huahai-space-xhs-title          给选题起标题
         ├─→ huahai-space-xhs-writer         写正文
-        └─→ huahai-xhs-html          做封面
                     │
              （做满 30 篇 / 3 个月后）
                     ↓
@@ -490,7 +489,7 @@ huahai-space-xhs-positioning（本 skill：定方向）
 定位就到这。接下来：
 - 想开始找具体写什么 → 用 huahai-space-xhs-hotspot 拉一遍「{赛道词}」的热点
 - 选题有了要起标题 → huahai-space-xhs-title
-- 要写正文 → huahai-space-xhs-writer ｜ 要做封面 → huahai-xhs-html
+- 要写正文 → huahai-space-xhs-writer
 - 等你发满 30 篇或做够 3 个月，回来用 huahai-space-xhs-account-audit 复诊一次，
   那时候有数据了，定位可以做第二次校准。
 ```

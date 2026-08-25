@@ -7,11 +7,11 @@ description: 微信公众号排版。Use when the user asks to turn an article, 
 
 Create a local HTML preview page that renders a provided article as WeChat-compatible rich HTML and includes a “复制 HTML” button. Preserve the article's meaning and content; only make light structural adjustments for layout readability.
 
-## 公众号配图适配
+## 公众号排版定位
 
-**定位**：这是公众号「整篇视觉/排版」这一路——用户给文章内容，你输出可直接贴进公众号编辑器的 **HTML 排版**（`复制 HTML` 一键搬运）。是本集合里配图 Skill 的搭档：`huahai-space-chart-image` / `huahai-space-text-logic-diagram` 出**单张配图**，本 Skill 出**整篇排版**。
+**定位**：用户给文章内容，你输出可直接贴进公众号编辑器的 **HTML 排版**（`复制 HTML` 一键搬运）。本 Skill 只负责整篇文章的结构与样式，不生成单张配图。
 
-**输出**：默认 HTML（本 Skill 主路径）。需要把某个区块（如头图/金句卡）导出成图片时，对该区块截图导出 PNG，或交给 Codex/workbuddy 内置出图模型重绘。
+**输出**：公众号 HTML（本 Skill 唯一路径）。
 
 **内容不改写**：只做排版层面的轻调整，保留全部事实、顺序、引用、结论。
 

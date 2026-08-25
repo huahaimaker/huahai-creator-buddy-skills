@@ -1,37 +1,31 @@
-# huahai-gzh-Skills · 公众号创作 Skill 集合
+# huahai-gzh-Skills · 公众号内容 Skill 集合
 
-面向微信公众号内容创作的 Skill 集合：从找选题、起标题，到出配图、整篇排版。
+面向微信公众号内容创作：从找选题、拆爆款、起标题，到整篇文章排版。
 
 ## 技能清单
 
-### 内容搜索 / 分析
+### 内容搜索与分析
+
 | 技能 | 作用 |
 |---|---|
-| `huahai-baokuan-article-analysis` | 按赛道/关键词抓公众号爆款文章，做数据洞察 |
-| `huahai-gzh-explosive-content-detector` | 每日爆款收录（低粉高阅读、数据增长中等） |
-| `huahai-global-content-search` | 全域内容搜索（小红书/B站/抖音关键词、详情、评论） |
-| `huahai-xhs-hotnotes` | 小红书热门笔记搜索，找选题灵感 |
+| `huahai-baokuan-article-analysis` | 按赛道或关键词抓公众号爆款文章，做数据洞察 |
+| `huahai-gzh-explosive-content-detector` | 每日爆款收录，识别低粉高阅读与增长中的内容 |
+| `huahai-global-content-search` | 全域内容搜索，覆盖小红书、B站、抖音的关键词、详情与评论 |
+| `huahai-xhs-hotnotes` | 搜索小红书热门笔记，补充选题灵感 |
 
-### 标题
+### 内容产出
+
 | 技能 | 作用 |
 |---|---|
-| `huahai-baokuan-title-generator` | 科技/AI 领域 10万+ 爆款标题生成、评分、A/B |
+| `huahai-baokuan-title-generator` | 科技与 AI 领域爆款标题生成、评分与 A/B 建议 |
+| `huahai-space-wechat-layout` | 整篇文章转公众号 HTML 排版，可一键复制 |
 
-### 配图（用户给内容 → 出 HTML 或用 codex/workbuddy 内置模型出图）
-| 技能 | 作用 | 主输出 |
-|---|---|---|
-| `huahai-space-chart-image` | 10 类图表（流程/架构/思维导图/SWOT…）配图 | 模型出图 PNG |
-| `huahai-space-text-logic-diagram` | 文本逻辑拆解 → 逻辑关系图配图 | HTML（可导 PNG） |
-| `huahai-space-wechat-layout` | 整篇文章 → 公众号 HTML 排版（一键复制） | HTML |
+## 使用边界
 
-## 配图 Skill 的出图方式
-
-用户输入内容，两种出图路径：
-- **HTML 出图**：生成自包含 HTML，可本地预览、可截图导出 PNG（逻辑图/排版类首选）。
-- **模型出图**：调用当前环境内置出图模型直接生成 PNG——**Codex** 用内置 `image_gen`/`image2`，**workbuddy** 用其出图模型；都没有时回退各 Skill `scripts/` 下的 API 脚本（需自备 key）。
-
-公众号常用尺寸：头图 2.35:1（1175×500）｜正文配图 16:9 或 3:2｜方图 1:1。
+- 默认只读取公开内容，不执行发布、点赞、评论、关注或私信。
+- 平台数据可能来自第三方服务或入库快照，不能当作实时后台数据。
+- 公众号排版只处理文章结构和 HTML 样式，不生成文章配图。
 
 ## 致谢
 
-`huahai-space-wechat-layout` / `huahai-space-text-logic-diagram` / `huahai-space-chart-image` 三个配图 Skill 改编自 [SpaceZephyr/design-buddy](https://github.com/SpaceZephyr/design-buddy)，已适配为公众号配图形式并把出图后端切到 Codex/workbuddy 内置模型。
+`huahai-space-wechat-layout` 改编自 [SpaceZephyr/design-buddy](https://github.com/SpaceZephyr/design-buddy)，并适配为公众号整篇 HTML 排版。

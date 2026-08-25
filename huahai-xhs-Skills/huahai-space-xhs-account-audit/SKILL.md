@@ -238,7 +238,7 @@ npx -y socialdatax-skills@latest xhs search \
 - 封面文字超过 25 字、需要眯眼看 → −3（这是点击率杀手）
 - 使用了平台通用模板（大量同赛道账号在用）→ −2
 
-**扣到 7 分以下** → 接力 `huahai-xhs-html`。
+**扣到 7 分以下** → 在行动清单中给出统一封面规则，但不负责出图。
 
 ---
 
@@ -487,7 +487,7 @@ npx -y socialdatax-skills@latest xhs search \
 |---|---|
 | 定位清晰度 < 9 | `huahai-space-xhs-positioning`（重做账号定位） |
 | 标题钩子率 < 8 | `huahai-space-xhs-title`（标题批量改写） |
-| 封面统一性 < 7 | `huahai-xhs-html`（封面模板设计） |
+| 封面统一性 < 7 | 给出统一封面规则，并安排后续内容做 A/B 验证 |
 | 用户拿出单篇后台数据要复盘 | `huahai-space-xhs-note-analytics`（单篇数据归因） |
 | 不知道发什么 | `xhs-ops-copilot` 模块二（选题灵感） |
 | 想拆某条爆款 | `xhs-ops-copilot` 模块三（爆款拆解） |
