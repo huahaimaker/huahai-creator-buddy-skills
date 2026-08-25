@@ -1,0 +1,6 @@
+interface:
+  display_name: "花海猫正文配图"
+  short_description: "用花海猫IP为中文文章生成清爽、有认知锚点的正文配图资产"
+  default_prompt: "Use $huahai-cat-illustrations 为这篇中文文章设计并生成花海猫IP正文配图。"
+policy:
+  allow_implicit_invocation: true

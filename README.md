@@ -17,7 +17,7 @@
 
 Creator Buddy 是一套给内容创作者、运营和自媒体作者用的**全栈创作 Skill 工具箱**。
 
-它覆盖三个平台的创作全流程——**公众号、小红书、视频**：从平台情报（搜热点、挖爆款、看评论、拆竞品），到成品产出（起标题、写正文、做配图、剪视频、配音配乐、出封面）。
+它覆盖三个平台的创作全流程——**公众号、小红书、视频**，并包含花海个人 IP 视觉技能：从平台情报（搜热点、挖爆款、看评论、拆竞品），到成品产出（起标题、写正文、做配图、剪视频、配音配乐、出封面）。
 
 基于开放的 Agent Skills 协议，可在 Claude Code、Codex、Cursor、OpenClaw、Hermes Agent、CodeBuddy、Workbuddy、Gemini CLI、OpenCode 等兼容 runtime 中运行。
 
@@ -27,12 +27,13 @@ Creator Buddy 是一套给内容创作者、运营和自媒体作者用的**全�
 
 ---
 
-## 三大板块
+## 四大板块
 
 ```text
 gzh-Skills/     公众号   ── 搜爆款 · 起标题 · 出配图 · 整篇排版
 xhs-Skills/     小红书   ── 定位 · 选题 · 标题 · 正文 · 封面 · 图文 · 复盘
 video-Skills/   视频     ── 选题 · 脚本 · 剪辑 · B-roll · 字幕 · 配音配乐 · 封面
+huahai-Skills/  花海 IP  ── 角色一致性 · 正文配图 · 个人视觉资产
 ```
 
 ### 📰 公众号 · `gzh-Skills`
@@ -84,6 +85,14 @@ video-Skills/   视频     ── 选题 · 脚本 · 剪辑 · B-roll · 字幕
 | `space-video-subtitle` | 字幕：转写 · 断句 · AI 校对 · 烧录 |
 | `space-video-audio` | 配音配乐：TTS 旁白 · 找 BGM · 压音混音 |
 | `space-video-cover` | 封面：家族气质 + 平台比例 + 高点击缩略图 |
+
+### 🌊 花海 IP · `huahai-Skills`
+
+花海个人角色与视觉资产工作流。
+
+| Skill | 干什么 |
+|---|---|
+| `huahai-cat-illustrations` | **正文配图**：用花海猫角色三视图保持 IP 一致性，将文章认知锚点生成 16:9 白底手绘配图 |
 
 ---
 
@@ -148,6 +157,7 @@ git clone https://github.com/SpaceZephyr/creator-buddy.git
 gzh-Skills/       公众号：搜索分析 + 标题 + 配图
 xhs-Skills/       小红书：起号全流程（10 个 Skill）
 video-Skills/     视频创作：选题→脚本→剪辑→B-roll→字幕→配音→封面
+huahai-Skills/    花海个人 IP：角色一致性正文配图
 ```
 
 每个子目录都是一个独立 Skill（一份 `SKILL.md` + 可选脚本/references）。
@@ -170,6 +180,7 @@ video-Skills/     视频创作：选题→脚本→剪辑→B-roll→字幕→�
 帮我把这条口播视频从头做到发：选题、脚本、剪辑、字幕、配乐、封面
 把这个 YouTube / 小宇宙 / B站 / 抖音 / 小红书链接提取成字幕
 给这篇文章做一支手绘图解 B-roll
+用花海猫 IP 给这篇文章生成 4 张正文配图
 ```
 
 也可以手动运行脚本，例如公众号赛道分析：
