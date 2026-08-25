@@ -86,7 +86,7 @@ inputs:
   missing: []
   sources: []
 data_status:
-  state: verified-live|verified-fixture|partial|empty|unavailable|structural-only|untested
+  state: verified-live|verified-local|verified-fixture|partial|empty|unavailable|structural-only|untested
   backend: null
   retrieved_at: null
   time_window: null

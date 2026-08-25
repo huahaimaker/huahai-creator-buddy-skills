@@ -17,6 +17,6 @@
   {
     "id": "xhs-buddy-4",
     "prompt": "我有小红书后台 Excel，没配任何平台 Key，能不能直接做复盘？",
-    "expected": "可以路由 note analytics 处理本地 CSV/Excel；标 verified-fixture 或本地数据状态，不把本地解析冒充平台实时请求。"
+    "expected": "可以路由 note analytics 处理本地 CSV/Excel；真实用户文件成功解析后标 verified-local，不把本地解析冒充平台实时请求或 fixture。"
   }
 ]

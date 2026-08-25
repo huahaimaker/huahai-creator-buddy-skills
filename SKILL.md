@@ -89,7 +89,7 @@ inputs:
   missing: []
   sources: []
 data_status:
-  state: verified-live|verified-fixture|partial|empty|unavailable|structural-only|untested
+  state: verified-live|verified-local|verified-fixture|partial|empty|unavailable|structural-only|untested
   backend: null
   retrieved_at: null
   time_window: null
@@ -135,6 +135,7 @@ positioning → 5–10 篇单变量计划 → 用户发布
 每次交付先说结果，再说明证据等级：
 
 - `verified-live`：当前真实请求已通过目标合同；
+- `verified-local`：用户提供的真实本地文件已成功解析，并通过字段与口径检查；
 - `verified-fixture`：确定性 fixture 已通过输入、错误与空集合同；
 - `partial`：部分后端/字段通过，其余缺失；
 - `empty`：查询成功但真实返回空集；
