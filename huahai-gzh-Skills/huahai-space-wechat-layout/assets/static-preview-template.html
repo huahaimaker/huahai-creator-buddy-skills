@@ -141,14 +141,19 @@
           ]);
           statusNode.textContent = "已复制 HTML，可以粘贴到公众号正文区域。";
         } catch {
-          const range = document.createRange();
-          range.selectNode(article);
-          const selection = window.getSelection();
-          selection.removeAllRanges();
-          selection.addRange(range);
-          document.execCommand("copy");
-          selection.removeAllRanges();
-          statusNode.textContent = "已用兼容模式复制当前预览内容。";
+          try {
+            const range = document.createRange();
+            range.selectNodeContents(article);
+            const selection = window.getSelection();
+            selection.removeAllRanges();
+            selection.addRange(range);
+            const copied = document.execCommand("copy");
+            selection.removeAllRanges();
+            if (!copied) throw new Error("copy command returned false");
+            statusNode.textContent = "已用兼容模式复制当前预览内容。";
+          } catch {
+            statusNode.textContent = "复制失败，请手动选择文章内容复制。";
+          }
         }
       });
     </script>
