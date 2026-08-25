@@ -57,6 +57,18 @@ def main() -> None:
         assert ordinary_payload["frontmatter_removed"] is False
         assert "这不是 YAML" in ordinary_page and "后续正文不能丢" in ordinary_page
 
+        ambiguous = work / "ambiguous.md"
+        ambiguous.write_text("---\nTitle: this is body text\n---\n\n正文。\n", encoding="utf-8")
+        ambiguous_output = work / "ambiguous.html"
+        kept = run(
+            "--input", str(ambiguous),
+            "--output", str(ambiguous_output),
+            "--frontmatter", "keep",
+        )
+        assert kept.returncode == 0
+        assert json.loads(kept.stdout)["frontmatter_removed"] is False
+        assert "Title: this is body text" in ambiguous_output.read_text(encoding="utf-8")
+
         empty = work / "empty.md"
         empty.write_text("\n", encoding="utf-8")
         failed = run("--input", str(empty), "--output", str(work / "empty.html"))
@@ -70,7 +82,13 @@ def main() -> None:
         lines = [line for line in unwritable.stdout.splitlines() if line.strip()]
         assert len(lines) == 1 and json.loads(lines[0])["status"] == "error"
 
-    print(json.dumps({"status": "success", "tests": 5}, ensure_ascii=False))
+        invalid_utf8 = work / "invalid.md"
+        invalid_utf8.write_bytes(b"\xff\xfe\x00")
+        unreadable = run("--input", str(invalid_utf8), "--output", str(work / "invalid.html"))
+        assert unreadable.returncode == 1
+        assert json.loads(unreadable.stdout)["status"] == "error"
+
+    print(json.dumps({"status": "success", "tests": 7}, ensure_ascii=False))
 
 
 if __name__ == "__main__":

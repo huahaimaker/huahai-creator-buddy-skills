@@ -73,14 +73,16 @@ def extract_title(source: str, fallback: str) -> str:
     return fallback
 
 
-def split_frontmatter(source: str) -> tuple[str, dict[str, str]]:
+def split_frontmatter(source: str, mode: str = "auto") -> tuple[str, dict[str, str], bool]:
+    if mode == "keep":
+        return source, {}, False
     lines = source.replace("\r\n", "\n").replace("\r", "\n").split("\n")
     if not lines or lines[0].strip() != "---":
-        return source, {}
+        return source, {}, False
     try:
         end = next(index for index in range(1, len(lines)) if lines[index].strip() == "---")
     except StopIteration:
-        return source, {}
+        return source, {}, False
     candidate = lines[1:end]
     top_level_key = re.compile(r"^[A-Za-z0-9_-]+:\s*.*$")
     has_key = any(top_level_key.match(line) for line in candidate)
@@ -92,14 +94,14 @@ def split_frontmatter(source: str) -> tuple[str, dict[str, str]]:
         or bool(re.match(r"^-\s+\S.*$", line))
         for line in candidate
     )
-    if not has_key or not yaml_like:
-        return source, {}
+    if mode == "auto" and (not has_key or not yaml_like):
+        return source, {}, False
     metadata: dict[str, str] = {}
     for line in candidate:
         match = re.match(r"^([A-Za-z0-9_-]+):\s*(.*?)\s*$", line)
         if match:
             metadata[match.group(1)] = match.group(2).strip('"\'')
-    return "\n".join(lines[end + 1 :]).lstrip("\n"), metadata
+    return "\n".join(lines[end + 1 :]).lstrip("\n"), metadata, True
 
 
 def is_table_separator(line: str) -> bool:
@@ -244,6 +246,7 @@ def main() -> None:
     parser.add_argument("--input", required=True, help="UTF-8 Markdown input")
     parser.add_argument("--output", required=True, help="output index.html")
     parser.add_argument("--style", choices=["auto", *STYLE_TOKENS], default="auto")
+    parser.add_argument("--frontmatter", choices=["auto", "keep", "strip"], default="auto")
     parser.add_argument("--title", help="override preview title")
     args = parser.parse_args()
 
@@ -251,11 +254,14 @@ def main() -> None:
     output_path = Path(args.output).expanduser().resolve()
     if not input_path.is_file():
         fail(f"input file not found: {input_path}")
-    source = input_path.read_text(encoding="utf-8")
+    try:
+        source = input_path.read_text(encoding="utf-8")
+    except (OSError, UnicodeError) as exc:
+        fail(f"cannot read input: {exc}", 1)
     if not source.strip():
         fail("input article is empty")
 
-    body_source, frontmatter = split_frontmatter(source)
+    body_source, frontmatter, frontmatter_removed = split_frontmatter(source, args.frontmatter)
     if not body_source.strip():
         fail("article body is empty after frontmatter")
     style = pick_style(args.style, body_source)
@@ -268,7 +274,10 @@ def main() -> None:
     template_path = Path(__file__).resolve().parent.parent / "assets" / "static-preview-template.html"
     if not template_path.is_file():
         fail(f"template not found: {template_path}", 1)
-    template = template_path.read_text(encoding="utf-8")
+    try:
+        template = template_path.read_text(encoding="utf-8")
+    except (OSError, UnicodeError) as exc:
+        fail(f"cannot read template: {exc}", 1)
     page = template.replace("{{TITLE}}", html.escape(title)).replace("{{ARTICLE_HTML}}", article_html)
     if "{{TITLE}}" in page or "{{ARTICLE_HTML}}" in page:
         fail("template placeholders were not fully replaced", 1)
@@ -284,7 +293,7 @@ def main() -> None:
         "title": title,
         "style": style,
         "source_bytes": len(source.encode("utf-8")),
-        "frontmatter_removed": bool(frontmatter),
+        "frontmatter_removed": frontmatter_removed,
         "block_count": block_count,
         "article_sha256": hashlib.sha256(article_html.encode("utf-8")).hexdigest(),
     }

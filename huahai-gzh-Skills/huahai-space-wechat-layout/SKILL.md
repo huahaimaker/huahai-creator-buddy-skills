@@ -37,11 +37,12 @@ python3 scripts/render_wechat_layout.py \
 | `--input` | 必填，UTF-8 Markdown |
 | `--output` | 必填，目标 `index.html` |
 | `--style` | `auto / claude / openai / google`，默认 auto |
+| `--frontmatter` | `auto / keep / strip`，默认 auto；正文开头本来就使用 `---` 分隔时用 keep |
 | `--title` | 可选，覆盖预览页标题，不修改正文 |
 
 成功：退出 0，stdout 单一 JSON，包含 `status: success`、绝对输出路径、实际风格、来源字节数、区块数和文章 HTML SHA-256。
 
-文件顶部若存在成对的 YAML frontmatter，渲染器会将它视作元数据而不显示在正文，并在 JSON 中返回 `frontmatter_removed: true`；其中的 `title` 可作为预览标题。
+文件顶部若存在成对的 YAML frontmatter，auto 模式会将 YAML 形态的内容视作元数据而不显示在正文，并在 JSON 中返回 `frontmatter_removed: true`；其中的 `title` 可作为预览标题。若普通正文恰好也是 `--- / key: value / ---` 形态，使用 `--frontmatter keep` 明确保留；需要强制剥离时使用 `strip`。
 
 输入缺失、空文件、未闭合代码块：退出 2，stdout 为 `status: error` JSON。模板等内部错误退出 1。
 
