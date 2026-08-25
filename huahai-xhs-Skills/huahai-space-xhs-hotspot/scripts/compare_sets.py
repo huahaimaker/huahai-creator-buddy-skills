@@ -9,7 +9,7 @@
 输入 = 已经落盘的 JSON 文件，本脚本不联网、不需要任何 API Key。
 支持两种输入格式，自动识别：
   1. 红狐路线：scripts/fetch_xhs_hot_articles.py 的 stdout（含 items[]）
-  2. 怪壳路线：xiaohongshu-content-tools/src/xiaohongshu/search-cli.js --output json（含 results[]）
+  2. 兼容路线：结构化搜索结果中的 results[]
 
 怪壳的 stdout 里会混入「查询任务重试 N/60 次」之类的日志行，本脚本会跳过
 非 JSON 前缀，直接定位到第一个完整 JSON 对象。
