@@ -27,6 +27,7 @@ ALIASES = {
     "publish_at": ["发布时间", "发布日期", "创建时间", "时间", "publish_time", "date"],
     "impression": ["曝光量", "曝光", "展现量", "展现", "浏览量", "推荐量", "impression", "views"],
     "read":       ["阅读量", "阅读", "观看量", "观看", "点击量", "笔记浏览量", "read", "clicks"],
+    "ctr":        ["点击率", "封面点击率", "笔记点击率", "ctr", "click_through_rate"],
     "like":       ["点赞量", "点赞数", "点赞", "赞", "like", "likes"],
     "collect":    ["收藏量", "收藏数", "收藏", "藏", "collect", "favorites"],
     "comment":    ["评论量", "评论数", "评论", "comment", "comments"],
@@ -37,9 +38,11 @@ ALIASES = {
     "search_pct": ["搜索流量占比", "搜索占比", "搜索来源占比", "search_ratio"],
     "rec_pct":    ["推荐流量占比", "推荐占比", "发现页占比", "recommend_ratio"],
     "type":       ["笔记类型", "类型", "形式", "note_type"],
+    "window":     ["统计周期", "数据口径", "时间口径", "统计口径", "window"],
 }
 
-RATE_COLS = {"finish", "search_pct", "rec_pct"}
+RATE_COLS = {"ctr", "finish", "search_pct", "rec_pct"}
+TEXT_COLS = {"title", "type", "window"}
 
 
 def read_any(path, nrows=None):
@@ -110,7 +113,7 @@ def load(path):
     mapping, unknown = map_columns(list(df.columns))
     out = pd.DataFrame(index=df.index)
     for canon, col in mapping.items():
-        if canon in ("title", "type"):
+        if canon in TEXT_COLS:
             out[canon] = df[col].astype(str)
         elif canon == "publish_at":
             out[canon] = pd.to_datetime(df[col], errors="coerce")
@@ -124,13 +127,16 @@ def load(path):
 
 
 def add_rates(d):
-    def div(a, b):
+    def div(a, b, valid=None):
         if a not in d or b not in d:
             return None
-        return (d[a] / d[b].replace(0, pd.NA)).astype(float)
+        numerator = d[a].where(d[a] >= 0)
+        denominator = d[b].where(d[b] > 0)
+        result = (numerator / denominator).astype(float)
+        return result.where(valid) if valid is not None else result
 
+    calculated = {}
     for name, (a, b) in {
-        "ctr":         ("read", "impression"),
         "like_rate":   ("like", "read"),
         "collect_rate":("collect", "read"),
         "comment_rate":("comment", "read"),
@@ -139,12 +145,54 @@ def add_rates(d):
     }.items():
         r = div(a, b)
         if r is not None:
-            d[name] = r
+            calculated[name] = r
+
+    computed_ctr = None
+    if {"read", "impression"}.issubset(d.columns):
+        computed_ctr = div("read", "impression", d["read"] <= d["impression"])
+        d["ctr_computed"] = computed_ctr
+
+    if "ctr" in d:
+        explicit_ctr = d["ctr"].where(d["ctr"].between(0, 1, inclusive="both"))
+        if {"read", "impression"}.issubset(d.columns):
+            explicit_ctr = explicit_ctr.where(d["read"] <= d["impression"])
+        d["ctr_explicit"] = explicit_ctr
+        if computed_ctr is not None:
+            comparable = explicit_ctr.notna() & computed_ctr.notna()
+            tolerance = (computed_ctr.abs() * 0.2).clip(lower=0.01)
+            conflict = comparable & ((explicit_ctr - computed_ctr).abs() > tolerance)
+            d["ctr_conflict"] = conflict
+            d["ctr"] = explicit_ctr.mask(conflict)
+        else:
+            d["ctr_conflict"] = False
+            d["ctr"] = explicit_ctr
+        d["ctr_source"] = "platform_export"
+    elif computed_ctr is not None:
+        d["ctr"] = computed_ctr
+        d["ctr_conflict"] = False
+        d["ctr_source"] = "computed_read_div_impression"
+
+    for name, values in calculated.items():
+        d[name] = values
     parts = [c for c in ("like", "collect", "comment", "share") if c in d]
     if parts and "read" in d:
-        d["engage_rate"] = d[parts].sum(axis=1) / d["read"].replace(0, pd.NA)
+        numerator = d[parts].where(d[parts] >= 0).sum(axis=1, min_count=1)
+        d["engage_rate"] = numerator / d["read"].where(d["read"] > 0)
     if "collect" in d and "like" in d:
-        d["collect_like_ratio"] = d["collect"] / d["like"].replace(0, pd.NA)
+        d["collect_like_ratio"] = d["collect"].where(d["collect"] >= 0) / d["like"].where(d["like"] > 0)
+
+    for rate_col in ("finish", "search_pct", "rec_pct"):
+        if rate_col in d:
+            d[rate_col] = d[rate_col].where(d[rate_col].between(0, 1, inclusive="both"))
+
+    if "window" in d and d["window"].dropna().astype(str).nunique() > 1:
+        d["mixed_time_window"] = True
+        for rate_col in ("ctr", "like_rate", "collect_rate", "comment_rate", "share_rate",
+                         "follow_rate", "engage_rate", "collect_like_ratio", "finish", "search_pct", "rec_pct"):
+            if rate_col in d:
+                d[rate_col] = float("nan")
+    else:
+        d["mixed_time_window"] = False
     return d
 
 
@@ -161,7 +209,18 @@ def quality_report(d, cols=None):
     if {"read", "impression"}.issubset(d.columns):
         bad = int((d["read"] > d["impression"]).sum())
         if bad:
-            lines.append(f"  阅读>曝光: {bad} 条（口径差异，常见，不必当错误但比率会失真）")
+            lines.append(f"  阅读>曝光: {bad} 条 —— 口径不可比，CTR 已置为 NA 并排除统计")
+    if "ctr_explicit" in d:
+        invalid = int(d["ctr_explicit"].isna().sum())
+        if invalid:
+            lines.append(f"  平台点击率无效/缺失: {invalid} 条 —— 已排除统计")
+    if "ctr_conflict" in d:
+        conflicts = int(d["ctr_conflict"].fillna(False).sum())
+        if conflicts:
+            lines.append(f"  平台点击率与阅读/曝光计算值冲突: {conflicts} 条 —— 已置为 NA，需确认口径")
+    if "mixed_time_window" in d and d["mixed_time_window"].any():
+        values = ", ".join(sorted(d["window"].dropna().astype(str).unique())[:6])
+        lines.append(f"  混合时间口径: {values} —— 全部比率已置为 NA，不得横向比较")
     if "impression" in d:
         low = int((d["impression"] < 1000).sum())
         if low:
