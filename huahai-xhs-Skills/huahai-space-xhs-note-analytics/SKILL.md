@@ -79,6 +79,7 @@ python3 <skill_dir>/scripts/xhs_notes.py probe '<数据文件>'
 - 图文没有完播率、视频没有图文阅读时长时记 `NA`，不能当 0。
 
 平台导出的 CTR 优先保留为 `ctr_explicit`，自行计算值保留为 `ctr_computed`，二者不能静默覆盖。
+当前脚本把两者相差超过“1 个百分点或计算值的 20%，取较大者”标为冲突；这是保守质检参数，不是平台口径。原始导出值另保留在 `ctr_raw`。
 
 ## 文件工作流
 
@@ -104,7 +105,7 @@ python3 <skill_dir>/scripts/xhs_notes.py metrics '<文件>' --out '<绝对输出
 python3 <skill_dir>/scripts/xhs_notes.py group '<文件>' --by '选题类型' --metric ctr,collect_rate
 ```
 
-一次只比较一个维度，并使用组内中位数。某组少于 3 篇，只列样本，不做优劣判断。
+一次只比较一个维度，并使用组内中位数。判断样本量时看“该组该指标的有效 n”，不是组总行数；有效 n 少于 3 只列样本，不做优劣判断。
 
 ## 诊断方法
 

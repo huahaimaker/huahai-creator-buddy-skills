@@ -43,6 +43,7 @@ ALIASES = {
 
 RATE_COLS = {"ctr", "finish", "search_pct", "rec_pct"}
 TEXT_COLS = {"title", "type", "window"}
+NONNEGATIVE_COLS = {"impression", "read", "like", "collect", "comment", "share", "follow", "duration"}
 
 
 def read_any(path, nrows=None):
@@ -114,13 +115,16 @@ def load(path):
     out = pd.DataFrame(index=df.index)
     for canon, col in mapping.items():
         if canon in TEXT_COLS:
-            out[canon] = df[col].astype(str)
+            out[canon] = df[col].astype("string").str.strip().replace("", pd.NA)
         elif canon == "publish_at":
             out[canon] = pd.to_datetime(df[col], errors="coerce")
         elif canon in RATE_COLS:
             out[canon] = normalize_rate(df[col])
+            if canon == "ctr":
+                out["ctr_raw"] = df[col]
         else:
-            out[canon] = to_num(df[col])
+            values = to_num(df[col])
+            out[canon] = values.where(values >= 0) if canon in NONNEGATIVE_COLS else values
     for c in unknown:                        # 未识别列原样保留，可用于分组
         out[c] = df[c]
     return df, out, mapping, unknown
@@ -153,6 +157,7 @@ def add_rates(d):
         d["ctr_computed"] = computed_ctr
 
     if "ctr" in d:
+        d["ctr_explicit_normalized_raw"] = d["ctr"]
         explicit_ctr = d["ctr"].where(d["ctr"].between(0, 1, inclusive="both"))
         if {"read", "impression"}.issubset(d.columns):
             explicit_ctr = explicit_ctr.where(d["read"] <= d["impression"])
@@ -174,9 +179,10 @@ def add_rates(d):
 
     for name, values in calculated.items():
         d[name] = values
-    parts = [c for c in ("like", "collect", "comment", "share") if c in d]
-    if parts and "read" in d:
-        numerator = d[parts].where(d[parts] >= 0).sum(axis=1, min_count=1)
+    parts = ["like", "collect", "comment", "share"]
+    if all(c in d for c in parts) and "read" in d:
+        complete = d[parts].notna().all(axis=1)
+        numerator = d[parts].sum(axis=1).where(complete)
         d["engage_rate"] = numerator / d["read"].where(d["read"] > 0)
     if "collect" in d and "like" in d:
         d["collect_like_ratio"] = d["collect"].where(d["collect"] >= 0) / d["like"].where(d["like"] > 0)
@@ -325,12 +331,14 @@ def cmd_group(a):
         n = len(sub)
         row = f"{k[:15]:<16}{n:>4}"
         for m in metrics:
-            row += f"{fmt(sub[m].median(), m in PCT):>16}"
+            valid_n = int(sub[m].notna().sum())
+            value = fmt(sub[m].median(), m in PCT) if valid_n else "-"
+            row += f"{(value + f' (n={valid_n})'):>16}"
+            if valid_n < 3:
+                small.append(f"{k}/{m}(n={valid_n})")
         print(row)
-        if n < 3:
-            small.append(f"{k}(n={n})")
     if small:
-        print(f"\n⚠ 样本不足 3 篇的组，仅列出、不得参与比较: {', '.join(small)}")
+        print(f"\n⚠ 有效样本不足 3 的组/指标，仅列出、不得参与比较: {', '.join(small)}")
     print("\n⚠ 分组对比只说明相关，不说明因果；若某维度与其他维度高度重合（如某类选题都用同款封面），"
           "必须在结论中点明混淆因素。")
 
