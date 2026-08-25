@@ -1,82 +1,116 @@
 ---
 name: huahai-baokuan-article-analysis
-description: Fetch and analyze WeChat Official Account hot articles / 公众号爆款文章 by sector or keywords. Use when the user asks for 爆款文章分析, 赛道爆款, 公众号爆款数据, reading counts, likes, shares, comments, title patterns, writing style, 爆款原因分析, or writing references for content creation.
+description: 按赛道或关键词查询公众号近期热门文章，并生成可审计的 JSON 与 HTML 分析报告。用户要求公众号爆款文章分析、赛道热文、阅读互动对比、标题或写作参考时触发。接口全失败、响应结构异常或文章不相关时明确停止，不用空报告或无关热点冒充成功。
+metadata:
+  dependencies:
+    python: []
+    system: []
 ---
 
-# 爆款文章分析
+# 公众号爆款文章分析
 
-## Overview
+用自带脚本查询第三方热点快照，按赛道合并、严格过滤、去重和相对排序，再生成 `data.json` 与 `report.html`。
 
-Use this skill to fetch hot WeChat Official Account article data by sector and generate a daily analysis report. It is for sector-level or keyword-level analysis, not exact historical scraping for one specific account.
+## 能力边界
 
-The bundled script queries the hot-article data source, merges keywords by sector, deduplicates articles, ranks them, and writes:
+- 适合：近 7–30 天的赛道样本、互动对比和写作参考。
+- 不适合：某个公众号的完整历史、公众号后台实时数据或微信官方榜单。
+- 阅读、点赞、分享和评论是第三方数据源快照；报告中的写作风格、爆款原因是本地规则推断。
+- `dataScore` 只在当前赛道、当前批次内有效，不能跨报告比较。
+- 只读公开数据，不发布、不互动、不绕过登录或风控。
 
-- `data.json`: raw structured data
-- `report.html`: a minimal visual analysis report with KPI cards, bar charts, ranked article cards, writing style analysis, hot reasons, and writing references
+## 工作流
 
-Do not default to Markdown reports. The primary user-facing artifact is `report.html`.
+### 1. 确认输入
 
-## Quick Start
+至少确认赛道、检索词、时间窗和每赛道结果数。默认近 7 天、每赛道 10 条；最长只建议 30 天。
 
-Run with the default sectors:
+用户只说大类且不同细分会显著改变结果时，先给 3–5 个方向让用户选；用户明确“就查这个词”时直接执行。
+
+### 2. 预检
 
 ```bash
-python3 ~/.codex/skills/huahai-baokuan-article-analysis/scripts/daily_sector_trends.py \
-  --output-dir ./output/huahai-baokuan-article-analysis
+command -v python3
 ```
 
-Run custom sectors:
+缺少 Python 3 就停止并说明，不自动安装。先定位本文件所在目录为 `<skill_dir>`，不要假设安装在 `~/.codex/skills`。
+
+### 3. 执行
+
+自定义赛道：
 
 ```bash
-python3 ~/.codex/skills/huahai-baokuan-article-analysis/scripts/daily_sector_trends.py \
-  --sector 'AI Agent=AI Agent,智能体,Agent框架' \
-  --sector 'Skill=skill,Skills,AI Skill' \
-  --sector 'Claude Code=Claude Code,Codex,AI编程' \
-  --output-dir ./output/huahai-baokuan-article-analysis
-```
-
-Run with a JSON config:
-
-```bash
-python3 ~/.codex/skills/huahai-baokuan-article-analysis/scripts/daily_sector_trends.py \
-  --sector-config ~/.codex/skills/huahai-baokuan-article-analysis/references/default-sectors.json \
+python3 <skill_dir>/scripts/daily_sector_trends.py \
+  --sector 'AI Coding=AI Coding,Codex,Claude Code' \
   --days 7 \
-  --output-dir ./output/huahai-baokuan-article-analysis
+  --max-items-per-sector 10 \
+  --output-dir '<绝对输出目录>'
 ```
 
-## Workflow
+使用预置赛道：
 
-1. Identify sectors and keywords from the user request.
-2. If the user only gives broad sectors, use or adapt `references/default-sectors.json`.
-3. Run `scripts/daily_sector_trends.py`.
-4. Open the generated `report.html`.
-5. Summarize for the user:
-   - highest-reading and highest-sharing articles
-   - writing style patterns
-   - hot article reasons
-   - title and topic formulas
-   - practical writing references
-6. Return the HTML file path as the main artifact.
+```bash
+python3 <skill_dir>/scripts/daily_sector_trends.py \
+  --sector-config <skill_dir>/references/default-sectors.json \
+  --days 7 \
+  --output-dir '<绝对输出目录>'
+```
 
-## Script Options
+脚本会在输出目录内建立日期子目录。
 
-| Option | Purpose |
-|---|---|
-| `--sector '赛道=关键词1,关键词2'` | Add one sector. Can repeat. |
-| `--sector-config path.json` | Load sectors from JSON object. |
-| `--days N` | Lookback window. Default is 7 days. |
-| `--start-date YYYY-MM-DD` | Explicit start date. Overrides `--days`. |
-| `--max-items-per-sector N` | Limit ranked articles per sector. Default is 10. |
-| `--output-dir DIR` | Parent output directory. A date folder is created inside. |
-| `--report-date YYYY-MM-DD` | Report date. Default is today. |
+### 4. 验证结果
 
-## Data Boundaries
+成功交付必须同时满足：
 
-- This skill returns hot-list data, not a specific account’s complete recent history.
-- `clicksCount` is a public data-source snapshot and may lag behind live WeChat backend reads.
-- If a specific account name returns no data, switch to that account’s topic keywords and compare same-sector articles.
-- If today’s data is sparse, use `--days 7` or `--days 30`.
+1. 进程退出码为 0；
+2. `data.json` 能解析，顶层 `status` 为 `success`、`partial` 或 `empty`；
+3. `requestSummary` 的请求数能与各赛道错误相互核对；
+4. 有文章时，标题或摘要命中该文章实际查询词，链接是 `http/https`；
+5. `report.html` 存在且非空。
 
-## Output Interpretation
+| 状态 | 含义 | 交付方式 |
+| --- | --- | --- |
+| `success` | 所有请求成功且有相关文章 | 交付 JSON、HTML 和简短结论 |
+| `partial` | 至少一个请求成功、至少一个失败 | 明示缺失范围，只基于成功样本分析 |
+| `empty` | 请求成功，但严格过滤后无相关文章 | 如实交付空结果，不用热门池补位 |
+| `error` | 所有请求失败 | 非零退出，只生成诊断 JSON，不生成正常 HTML |
 
-Use reading count for reach, share count for spread, comments for discussion, and low-fan high-reading entries for title/structure references. Repeated accounts indicate strong competitors or content sources worth following.
+不能仅因生成了文件就判定成功；必须检查退出码和状态。
+
+### 5. 输出结论
+
+先陈述可观测事实：
+
+- 查询赛道、关键词和实际日期；
+- 请求成功/失败数；
+- 过滤后文章数；
+- 阅读、分享和评论最高的样本；
+- 每条原文链接。
+
+再单独列“启发式分析”：标题结构、写作风格、可能的传播机制和可借鉴方向。不要把高阅读自动解释成适合用户账号，也不要把推断写成平台事实。
+
+## 失败处理
+
+| 触发条件 | 处理 |
+| --- | --- |
+| DNS、网络或 TLS 失败 | 保留原始错误；全部失败时非零退出 |
+| HTTP 非 2xx、JSON 或字段结构异常 | 视为协议错误，不当成空数据 |
+| 只有部分关键词失败 | 状态标为 `partial`，HTML 顶部显示警告 |
+| 关键词零相关 | 状态标为 `empty`，不回退到无关热门文章 |
+| 原文链接非法 | 不生成可点击链接，不构造伪链接 |
+| 用户要单账号完整历史 | 说明超出热点库能力，改为同赛道关键词分析 |
+
+## 反例黑名单
+
+- 不关闭证书链或主机名校验。
+- 不把所有请求失败包装成“文章数 0”的成功报告。
+- 不在相关性过滤为零时恢复无关文章。
+- 不把 `dataScore` 当绝对爆款分或跨报告比较。
+- 不把第三方接口称作微信官方数据。
+- 不编造阅读量、账号历史、写作原因或平台机制。
+
+## 资源
+
+- `scripts/daily_sector_trends.py`：唯一执行入口。
+- `references/default-sectors.json`：默认赛道配置。
+- `test-prompts.json`：行为回归样例。
