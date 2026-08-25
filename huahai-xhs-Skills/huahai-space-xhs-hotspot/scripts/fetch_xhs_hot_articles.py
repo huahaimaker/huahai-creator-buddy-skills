@@ -6,12 +6,15 @@
 
 import sys
 import argparse
+import html
 import json
+import math
 import os
+import re
 import urllib.request
 import urllib.error
 from datetime import date, datetime
-from urllib.parse import urlparse
+from urllib.parse import parse_qs, urlparse
 
 
 def parse_count(value):
@@ -58,15 +61,18 @@ def exact_count(value):
         return None
     if isinstance(value, bool):
         return None
-    if isinstance(value, (int, float)):
-        return int(value)
+    if isinstance(value, int):
+        return value if value >= 0 else None
+    if isinstance(value, float):
+        return int(value) if math.isfinite(value) and value >= 0 and value.is_integer() else None
     text = str(value).strip().replace(",", "")
-    if not text or any(mark in text.lower() for mark in ("+", "w", "万", "k")):
+    if not re.fullmatch(r"[0-9]+", text):
         return None
-    try:
-        return int(float(text))
-    except ValueError:
-        return None
+    return int(text)
+
+
+def is_same_or_subdomain(host: str, domain: str) -> bool:
+    return host == domain or host.endswith("." + domain)
 
 
 def valid_note_link(item):
@@ -78,9 +84,10 @@ def valid_note_link(item):
     if parsed.scheme not in ("http", "https"):
         return ""
     host = (parsed.hostname or "").lower()
-    if host.endswith("xhslink.com"):
+    if is_same_or_subdomain(host, "xhslink.com"):
         return raw
-    if host.endswith("xiaohongshu.com") and "xsec_token=" in parsed.query:
+    query = parse_qs(parsed.query)
+    if is_same_or_subdomain(host, "xiaohongshu.com") and query.get("xsec_token"):
         return raw
     return ""
 
@@ -216,9 +223,11 @@ def format_as_html(data: dict, max_items: int = 10, start_date: str = None):
     """
     from datetime import datetime
     
-    keyword = data.get("keyword", "")
+    keyword = str(data.get("keyword", "") or "")
     total = data.get("total", 0)
-    is_full_site = not keyword or keyword.strip() == ""
+    is_full_site = not keyword.strip()
+    keyword_html = html.escape(keyword, quote=True)
+    total_html = html.escape(str(total), quote=True)
     
     def process_title(item):
         """处理标题"""
@@ -231,8 +240,7 @@ def format_as_html(data: dict, max_items: int = 10, start_date: str = None):
                     title = title + '...'
         if not title or title.strip() == '':
             title = '无标题'
-        title = title.replace('<', '&lt;').replace('>', '&gt;').replace('"', '&quot;')
-        return title
+        return html.escape(title, quote=True)
     
     def format_time(item):
         """格式化发布时间"""
@@ -250,8 +258,9 @@ def format_as_html(data: dict, max_items: int = 10, start_date: str = None):
         """生成单个卡片 HTML"""
         
         note_id = item.get('id', '')
-        author_id = item.get('authorId', '')
-        author_name = item.get('authorNickname', '未知')
+        author_id_raw = str(item.get('authorId', '') or '')
+        author_id = author_id_raw if re.fullmatch(r"[A-Za-z0-9]+", author_id_raw) else ''
+        author_name = html.escape(str(item.get('authorNickname', '未知') or '未知'), quote=True)
         fans = item.get('authorFans', 0)
         title = process_title(item)
         pub_time = format_time(item)
@@ -260,14 +269,17 @@ def format_as_html(data: dict, max_items: int = 10, start_date: str = None):
         collect_count = fuzzy_count(item.get('collectedCount', 0))
         
         # 作品链接
-        note_link = valid_note_link(item)
+        note_link = html.escape(valid_note_link(item), quote=True)
         # 作者主页链接
         author_link = f"https://www.xiaohongshu.com/user/profile/{author_id}" if author_id else "#"
         
-        relevance_score = item.get('relevanceScore', 0)
-        popularity_score = item.get('popularityScore', 0)
-        recency_score = item.get('recencyScore', 0)
-        total_score = item.get('totalScore', 0)
+        def display_score(key):
+            value = item.get(key)
+            return '--' if value is None else html.escape(str(value), quote=True)
+
+        relevance_score = display_score('relevanceScore')
+        popularity_score = display_score('popularityScore')
+        recency_score = display_score('recencyScore')
 
         # 评分标签（全站热门时不展示）
         scores_html = ''
@@ -521,8 +533,8 @@ def format_as_html(data: dict, max_items: int = 10, start_date: str = None):
     <div class="container">
         <div class="report-header">
             <h1>小红书热门笔记数据分析报告</h1>
-            <div class="keyword">关键词：{keyword} | 时间范围：{time_range}</div>
-            <div class="total">共找到 {total} 条相关笔记</div>
+            <div class="keyword">关键词：{keyword_html} | 时间范围：{time_range}</div>
+            <div class="total">共找到 {total_html} 条相关笔记</div>
         </div>
         
         {no_articles_hint}
@@ -583,10 +595,10 @@ def format_as_json(data: dict, max_items: int = 10):
         }
         # 有关键词时才输出评分字段
         if not is_full_site:
-            item_data['totalScore'] = item.get('totalScore', 0)
-            item_data['relevanceScore'] = item.get('relevanceScore', 0)
-            item_data['popularityScore'] = item.get('popularityScore', 0)
-            item_data['recencyScore'] = item.get('recencyScore', 0)
+            item_data['totalScore'] = item.get('totalScore')
+            item_data['relevanceScore'] = item.get('relevanceScore')
+            item_data['popularityScore'] = item.get('popularityScore')
+            item_data['recencyScore'] = item.get('recencyScore')
         result.append(item_data)
     
     # 格式化推荐热门笔记（latestHotArticles，无评分字段）
@@ -680,11 +692,11 @@ def main():
         
         if args.output_format == 'json':
             rendered = json.dumps(json_data, ensure_ascii=False, indent=2)
-            print(rendered)
             if args.output_file:
                 with open(args.output_file, 'w', encoding='utf-8') as f:
                     f.write(rendered + '\n')
                 print(f"✓ JSON 结果已保存到: {args.output_file}", file=sys.stderr)
+            print(rendered)
         else:
             html_content = format_as_html(data, max_items=args.max_items, start_date=args.start_date)
             keyword_safe = args.keyword.replace('"', '').replace(' ', '_').replace('/', '_') or '全站热门'
