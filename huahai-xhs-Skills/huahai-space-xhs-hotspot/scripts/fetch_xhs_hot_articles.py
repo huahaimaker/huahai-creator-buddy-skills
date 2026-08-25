@@ -99,6 +99,8 @@ def public_note_link(item):
     raw = valid_note_link(item)
     if not raw:
         return ""
+    if re.search(r"xsec_token(?:=|%3d)", raw, re.IGNORECASE):
+        return ""
     host = (urlparse(raw).hostname or "").lower()
     return "" if is_same_or_subdomain(host, "xiaohongshu.com") else raw
 

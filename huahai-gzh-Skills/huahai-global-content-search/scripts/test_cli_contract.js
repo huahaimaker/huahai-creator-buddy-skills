@@ -70,6 +70,11 @@ async function verifyRedactedLogs() {
   const sample = JSON.stringify({
     url: `https://www.xiaohongshu.com/explore/abc?xsec_token=${secret}&source=search`,
     xsec_token: secret,
+    raw: JSON.stringify({ items: [{ xsec_token: `nested-${secret}` }] }),
+    yaml: `xsec_token: yaml-${secret}\nname: test`,
+    shell: `xsec_token = shell-${secret}`,
+    array: { xsec_token: [`array-${secret}`, "second"] },
+    encoded: `https://example.com/a?xsec_token%3Dencoded-${secret}%2Fdef`,
   });
   const redacted = log.redactSensitive(sample);
   assert.ok(!redacted.includes(secret));

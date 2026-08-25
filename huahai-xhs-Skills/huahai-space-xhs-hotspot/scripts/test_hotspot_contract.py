@@ -64,6 +64,10 @@ def main() -> None:
     assert "<script>alert(1)</script>" not in rendered_html
     assert "&lt;script&gt;alert(1)&lt;/script&gt;" in rendered_html
     assert "token123" not in rendered_html and "原始链接仅保留在本地 JSON" in rendered_html
+    short_fixture = fixture()
+    short_fixture["articles"][0]["shareInfoLink"] = "https://xhslink.com/a?xsec_token=short-secret"
+    short_html = MODULE.format_as_html(short_fixture)
+    assert "short-secret" not in short_html and "原始链接仅保留在本地 JSON" in short_html
 
     with tempfile.TemporaryDirectory() as tmp:
         MODULE.fetch_xhs_hot_notes = lambda **_: fixture()
