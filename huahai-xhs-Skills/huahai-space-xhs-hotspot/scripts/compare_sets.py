@@ -71,6 +71,18 @@ def load_json_loose(path: Path) -> Any:
 
 def normalize(obj: Any) -> tuple[list[dict[str, Any]], str]:
     """返回 (归一后的笔记列表, 识别到的路线名)。"""
+    if isinstance(obj, dict) and obj.get("status") == "success" and "raw" in obj:
+        raw = obj.get("raw")
+        if isinstance(raw, str):
+            try:
+                raw = json.loads(raw)
+            except json.JSONDecodeError as exc:
+                raise ValueError(f"全域搜索 raw 不是 JSON，不能做数值对比: {exc}") from exc
+        items, _ = normalize(raw)
+        backend = str(obj.get("backend") or "global-search")
+        for item in items:
+            item["route"] = backend
+        return items, backend
     if isinstance(obj, list):
         raw_items, route = obj, "unknown"
     elif "items" in obj:
