@@ -87,9 +87,20 @@ def valid_note_link(item):
     if is_same_or_subdomain(host, "xhslink.com"):
         return raw
     query = parse_qs(parsed.query)
-    if is_same_or_subdomain(host, "xiaohongshu.com") and query.get("xsec_token"):
+    tokens = query.get("xsec_token", [])
+    valid_token = any(token.strip() and not any(ord(char) < 32 for char in token) for token in tokens)
+    if is_same_or_subdomain(host, "xiaohongshu.com") and valid_token:
         return raw
     return ""
+
+
+def public_note_link(item):
+    """HTML/公开交付不携带 xsec_token；完整链接只留在本地 JSON 数据层。"""
+    raw = valid_note_link(item)
+    if not raw:
+        return ""
+    host = (urlparse(raw).hostname or "").lower()
+    return "" if is_same_or_subdomain(host, "xiaohongshu.com") else raw
 
 
 def fetch_xhs_hot_notes(keyword: str, debug: bool = False, max_retries: int = 3, 
@@ -269,7 +280,7 @@ def format_as_html(data: dict, max_items: int = 10, start_date: str = None):
         collect_count = fuzzy_count(item.get('collectedCount', 0))
         
         # 作品链接
-        note_link = html.escape(valid_note_link(item), quote=True)
+        note_link = html.escape(public_note_link(item), quote=True)
         # 作者主页链接
         author_link = f"https://www.xiaohongshu.com/user/profile/{author_id}" if author_id else "#"
         
@@ -295,7 +306,7 @@ def format_as_html(data: dict, max_items: int = 10, start_date: str = None):
         title_html = (f'<a href="{note_link}" class="card-title" target="_blank" rel="noreferrer">{title}</a>'
                       if note_link else f'<span class="card-title">{title}</span>')
         view_html = (f'<a href="{note_link}" class="view-note-btn" target="_blank" rel="noreferrer">查看作品 ↗</a>'
-                     if note_link else '<span class="view-note-btn">链接缺失/无 xsec_token</span>')
+                     if note_link else '<span class="view-note-btn">原始链接仅保留在本地 JSON</span>')
         card_html = f'''
         <div class="card">
             <div class="card-title-row">

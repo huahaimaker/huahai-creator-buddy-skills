@@ -27,6 +27,7 @@ from __future__ import annotations
 
 import argparse
 import json
+import math
 import re
 import sys
 from pathlib import Path
@@ -40,17 +41,14 @@ def parse_exact_count(value: Any) -> int | None:
         return None
     if isinstance(value, bool):
         return None
-    if isinstance(value, (int, float)):
-        return int(value)
+    if isinstance(value, int):
+        return value if value >= 0 else None
+    if isinstance(value, float):
+        return int(value) if math.isfinite(value) and value >= 0 and value.is_integer() else None
     text = str(value).strip().replace(",", "")
-    if not text:
+    if not re.fullmatch(r"[0-9]+", text):
         return None
-    if any(mark in text.lower() for mark in ("+", "万", "w", "k")):
-        return None
-    try:
-        return int(float(text))
-    except ValueError:
-        return None
+    return int(text)
 
 
 def load_json_loose(path: Path) -> Any:

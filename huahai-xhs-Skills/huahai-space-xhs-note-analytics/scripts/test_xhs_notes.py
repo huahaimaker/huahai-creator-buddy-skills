@@ -22,9 +22,9 @@ SPEC.loader.exec_module(MODULE)
 
 
 def main() -> None:
-    mapping, unknown = MODULE.map_columns(["标题", "阅读量", "点赞率"])
+    mapping, unknown = MODULE.map_columns(["标题", "阅读量", "点赞率", "like_percentage"])
     assert mapping["title"] == "标题" and mapping["read"] == "阅读量"
-    assert "like" not in mapping and "点赞率" in unknown
+    assert "like" not in mapping and "点赞率" in unknown and "like_percentage" in unknown
 
     mixed = pd.Series(["0.05", "5", "6%"])
     normalized, conflict = MODULE.normalize_rate(mixed)
@@ -33,6 +33,10 @@ def main() -> None:
     consistent = pd.Series(["5", "6", "7%"])
     normalized, conflict = MODULE.normalize_rate(consistent)
     assert conflict is False and normalized.round(4).tolist() == [0.05, 0.06, 0.07]
+
+    zero_percent = pd.Series([0, 5, 6])
+    normalized, conflict = MODULE.normalize_rate(zero_percent)
+    assert conflict is False and normalized.round(4).tolist() == [0.0, 0.05, 0.06]
 
     with tempfile.TemporaryDirectory() as tmp:
         work = Path(tmp)
@@ -65,7 +69,7 @@ def main() -> None:
         assert result.returncode == 0, result.stderr
         assert "有效样本不足 3" in result.stdout and "(n=" in result.stdout
 
-    print(json.dumps({"status": "success", "tests": 5}, ensure_ascii=False))
+    print(json.dumps({"status": "success", "tests": 6}, ensure_ascii=False))
 
 
 if __name__ == "__main__":

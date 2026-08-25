@@ -44,7 +44,7 @@ ALIASES = {
 RATE_COLS = {"ctr", "finish", "search_pct", "rec_pct"}
 TEXT_COLS = {"title", "type", "window"}
 NONNEGATIVE_COLS = {"impression", "read", "like", "collect", "comment", "share", "follow", "duration"}
-RATE_NAME_MARKERS = ("率", "占比", "ratio", "rate", "pct", "百分比")
+RATE_NAME_MARKERS = ("率", "占比", "ratio", "rate", "pct", "percent", "percentage", "百分比")
 
 
 def read_any(path, nrows=None):
@@ -113,7 +113,8 @@ def normalize_rate(s):
     explicit_pct = raw.str.contains("%", regex=False, na=False)
     bare = v.where(~explicit_pct)
     valid_bare = bare[(bare >= 0) & bare.notna()]
-    has_fraction = bool(valid_bare.le(1).any())
+    # 0 对小数/百分数两种口径都相同，不作为单位冲突证据。
+    has_fraction = bool((valid_bare.gt(0) & valid_bare.le(1)).any())
     has_percent_number = bool(valid_bare.gt(1).any())
     if has_fraction and has_percent_number:
         return pd.Series(float("nan"), index=v.index, dtype="float64"), True

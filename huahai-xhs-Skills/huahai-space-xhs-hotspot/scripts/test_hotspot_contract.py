@@ -18,6 +18,10 @@ SPEC = importlib.util.spec_from_file_location("xhs_hotspot", SCRIPT)
 assert SPEC and SPEC.loader
 MODULE = importlib.util.module_from_spec(SPEC)
 SPEC.loader.exec_module(MODULE)
+COMPARE_SPEC = importlib.util.spec_from_file_location("compare_sets", ROOT / "compare_sets.py")
+assert COMPARE_SPEC and COMPARE_SPEC.loader
+COMPARE = importlib.util.module_from_spec(COMPARE_SPEC)
+COMPARE_SPEC.loader.exec_module(COMPARE)
 
 
 def fixture() -> dict:
@@ -43,12 +47,14 @@ def main() -> None:
     assert not MODULE.valid_note_link({"shareInfoLink": "https://evilxiaohongshu.com/a?xsec_token=t"})
     assert not MODULE.valid_note_link({"shareInfoLink": "https://xhslink.com.evil.example/a"})
     assert not MODULE.valid_note_link({"shareInfoLink": "https://www.xiaohongshu.com/a?xsec_token="})
+    assert not MODULE.valid_note_link({"shareInfoLink": "https://www.xiaohongshu.com/a?xsec_token=%20"})
 
     accepted = {12: 12, 12.0: 12, "12": 12, "1,200": 1200}
     for raw, expected in accepted.items():
         assert MODULE.exact_count(raw) == expected
     for raw in (-1, -1.0, 1.5, "1.5", "1w+", "1万", True, float("inf")):
         assert MODULE.exact_count(raw) is None
+        assert COMPARE.parse_exact_count(raw) is None
 
     payload = MODULE.format_as_json(fixture())
     item = payload["items"][0]
@@ -57,6 +63,7 @@ def main() -> None:
     rendered_html = MODULE.format_as_html(fixture())
     assert "<script>alert(1)</script>" not in rendered_html
     assert "&lt;script&gt;alert(1)&lt;/script&gt;" in rendered_html
+    assert "token123" not in rendered_html and "原始链接仅保留在本地 JSON" in rendered_html
 
     with tempfile.TemporaryDirectory() as tmp:
         MODULE.fetch_xhs_hot_notes = lambda **_: fixture()
@@ -75,7 +82,7 @@ def main() -> None:
         assert len(lines) == 1
         assert json.loads(lines[0])["status"] == "error"
 
-    print(json.dumps({"status": "success", "tests": 5}, ensure_ascii=False))
+    print(json.dumps({"status": "success", "tests": 6}, ensure_ascii=False))
 
 
 if __name__ == "__main__":
