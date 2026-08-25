@@ -34,28 +34,23 @@ from typing import Any
 
 # ---------- 数值解析 ----------
 
-def parse_count(value: Any) -> int:
-    """'1.2万' / '5000+' / '3.4w' / 1234 -> int。无法解析返回 0。"""
+def parse_exact_count(value: Any) -> int | None:
+    """只接受精确计数；'1.2万' / '5000+' 等展示值返回 None。"""
     if value is None:
-        return 0
+        return None
+    if isinstance(value, bool):
+        return None
     if isinstance(value, (int, float)):
         return int(value)
-    text = str(value).strip().replace(",", "").replace("+", "")
+    text = str(value).strip().replace(",", "")
     if not text:
-        return 0
-    mult = 1
-    for unit in ("万", "w", "W"):
-        if unit in text:
-            text = text.replace(unit, "")
-            mult = 10000
-            break
-    if "k" in text.lower():
-        text = text.lower().replace("k", "")
-        mult = 1000
+        return None
+    if any(mark in text.lower() for mark in ("+", "万", "w", "k")):
+        return None
     try:
-        return int(float(text) * mult)
+        return int(float(text))
     except ValueError:
-        return 0
+        return None
 
 
 def load_json_loose(path: Path) -> Any:
@@ -90,19 +85,20 @@ def normalize(obj: Any) -> tuple[list[dict[str, Any]], str]:
         if not isinstance(it, dict):
             continue
         user = it.get("user") if isinstance(it.get("user"), dict) else {}
-        liked = parse_count(it.get("likedCount", it.get("liked_count")))
-        collected = parse_count(it.get("collectedCount", it.get("collected_count")))
-        commented = parse_count(it.get("commentsCount", it.get("comment_count")))
-        shared = parse_count(it.get("sharedCount", it.get("shared_count")))
-        interactive = parse_count(it.get("interactiveCount"))
-        if not interactive:
+        liked = parse_exact_count(it.get("likedCount", it.get("liked_count")))
+        collected = parse_exact_count(it.get("collectedCount", it.get("collected_count")))
+        commented = parse_exact_count(it.get("commentsCount", it.get("comment_count")))
+        shared = parse_exact_count(it.get("sharedCount", it.get("shared_count")))
+        raw_interactive = it.get("interactiveCount")
+        interactive = parse_exact_count(raw_interactive)
+        if raw_interactive in (None, "") and all(v is not None for v in (liked, collected, commented, shared)):
             interactive = liked + collected + commented + shared
         out.append({
             "title": str(it.get("title") or it.get("desc") or "").strip(),
             "desc": str(it.get("desc") or "")[:120],
             "url": it.get("noteLink") or it.get("url") or "",
             "author": it.get("authorNickname") or user.get("nickname") or "",
-            "fans": parse_count(it.get("authorFans")) if it.get("authorFans") else None,
+            "fans": parse_exact_count(it.get("authorFans")),
             "publish": it.get("createTime") or it.get("publish_time") or "",
             "liked": liked,
             "collected": collected,
@@ -115,7 +111,7 @@ def normalize(obj: Any) -> tuple[list[dict[str, Any]], str]:
     # 去重：url 优先，其次标题
     seen: set[str] = set()
     deduped: list[dict[str, Any]] = []
-    for it in sorted(out, key=lambda x: x["interactive"], reverse=True):
+    for it in sorted(out, key=lambda x: x["interactive"] if x["interactive"] is not None else -1, reverse=True):
         key = it["url"] or it["title"]
         if not key or key in seen:
             continue
@@ -215,26 +211,34 @@ def median(nums: list[int]) -> int:
 def summarize(label: str, items: list[dict[str, Any]], route: str, top: int) -> dict[str, Any]:
     items = items[:top]
     n = len(items)
-    inter = [i["interactive"] for i in items]
-    liked = sum(i["liked"] for i in items)
-    collected = sum(i["collected"] for i in items)
-    commented = sum(i["commented"] for i in items)
+    inter = [i["interactive"] for i in items if i["interactive"] is not None]
+    collect_like_pairs = [(i["collected"], i["liked"]) for i in items
+                          if i["collected"] is not None and i["liked"] is not None]
+    comment_like_pairs = [(i["commented"], i["liked"]) for i in items
+                          if i["commented"] is not None and i["liked"] is not None]
+    collected = sum(pair[0] for pair in collect_like_pairs)
+    liked_for_collect = sum(pair[1] for pair in collect_like_pairs)
+    commented = sum(pair[0] for pair in comment_like_pairs)
+    liked_for_comment = sum(pair[1] for pair in comment_like_pairs)
     fans = [i["fans"] for i in items if i["fans"] is not None]
     return {
         "label": label,
         "route": route,
         "n": n,
+        "exact_interaction_n": len(inter),
         "interactive_median": median(inter),
         "interactive_max": max(inter) if inter else 0,
-        "collect_like_ratio": round(collected / liked, 2) if liked else None,
-        "comment_like_ratio": round(commented / liked, 2) if liked else None,
+        "collect_like_ratio": round(collected / liked_for_collect, 2) if liked_for_collect else None,
+        "comment_like_ratio": round(commented / liked_for_comment, 2) if liked_for_comment else None,
         "small_account_count": sum(1 for f in fans if f < 10000) if fans else None,
         "fans_known": bool(fans),
         "formats": distribution(items, FORMAT_RULES, single=True, use_desc=True),
         "hooks": distribution(items, HOOK_RULES, single=False),
         "words": title_words(items, label=label),
-        "top_note": ({"title": items[0]["title"], "url": items[0]["url"],
-                      "interactive": items[0]["interactive"]} if items else None),
+        "top_note": ({"title": next(i for i in items if i["interactive"] is not None)["title"],
+                      "url": next(i for i in items if i["interactive"] is not None)["url"],
+                      "interactive": next(i for i in items if i["interactive"] is not None)["interactive"]}
+                     if inter else None),
     }
 
 
@@ -254,7 +258,9 @@ def render(summaries: list[dict[str, Any]], kind: str) -> str:
         hook = next(iter(s["hooks"].items()), ("-", 0))
         small = "字段缺失" if not s["fans_known"] else f"{s['small_account_count']}/{s['n']}"
         lines.append(
-            f"| {s['label']} | {s['n']} | {s['interactive_median']} | {s['interactive_max']} | "
+            f"| {s['label']} | {s['n']}（精确互动 {s['exact_interaction_n']}） | "
+            f"{s['interactive_median'] if s['exact_interaction_n'] else '-'} | "
+            f"{s['interactive_max'] if s['exact_interaction_n'] else '-'} | "
             f"{s['collect_like_ratio'] if s['collect_like_ratio'] is not None else '-'} | "
             f"{s['comment_like_ratio'] if s['comment_like_ratio'] is not None else '-'} | {small} | "
             f"{fmt[0]} {pct(fmt[1], s['n'])} | {hook[0]} {pct(hook[1], s['n'])} |"
@@ -270,6 +276,8 @@ def render(summaries: list[dict[str, Any]], kind: str) -> str:
             lines.append(f"- 最高互动：《{s['top_note']['title']}》 {s['top_note']['interactive']} {s['top_note']['url']}")
         if s["n"] < 8:
             lines.append("- ⚠️ 样本 < 8 条，占比不可用作趋势判断，仅供定性参考。")
+        if s["exact_interaction_n"] < s["n"]:
+            lines.append(f"- ⚠️ {s['n'] - s['exact_interaction_n']} 条只有模糊互动展示值，已从绝对量统计排除。")
         lines.append("")
     # 交集/差集词
     if len(summaries) > 1:

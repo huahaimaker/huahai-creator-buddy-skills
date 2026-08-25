@@ -10,6 +10,8 @@ import json
 import os
 import urllib.request
 import urllib.error
+from datetime import date, datetime
+from urllib.parse import urlparse
 
 
 def parse_count(value):
@@ -50,6 +52,39 @@ def fuzzy_count(value):
     return f'{wan}w+'
 
 
+def exact_count(value):
+    """分析层只保留可精确解析的计数；模糊值返回 None，不反推下界。"""
+    if value is None or value == "":
+        return None
+    if isinstance(value, bool):
+        return None
+    if isinstance(value, (int, float)):
+        return int(value)
+    text = str(value).strip().replace(",", "")
+    if not text or any(mark in text.lower() for mark in ("+", "w", "万", "k")):
+        return None
+    try:
+        return int(float(text))
+    except ValueError:
+        return None
+
+
+def valid_note_link(item):
+    """只返回数据源给出的可用笔记链接，绝不从 note id 重建。"""
+    raw = str(item.get("shareInfoLink") or "").strip()
+    if not raw or len(raw) > 4096:
+        return ""
+    parsed = urlparse(raw)
+    if parsed.scheme not in ("http", "https"):
+        return ""
+    host = (parsed.hostname or "").lower()
+    if host.endswith("xhslink.com"):
+        return raw
+    if host.endswith("xiaohongshu.com") and "xsec_token=" in parsed.query:
+        return raw
+    return ""
+
+
 def fetch_xhs_hot_notes(keyword: str, debug: bool = False, max_retries: int = 3, 
                         start_date: str = None, end_date: str = None, 
                         page_num: int = 1, page_size: int = 50):
@@ -57,10 +92,7 @@ def fetch_xhs_hot_notes(keyword: str, debug: bool = False, max_retries: int = 3,
     # 从环境变量读取 API Key
     api_key = os.environ.get("REDFOX_API_KEY", "").strip()
     if not api_key:
-        print("❌ 错误：未找到 REDFOX_API_KEY 环境变量。", file=sys.stderr)
-        print("请在 Coze 平台的环境变量配置中添加 REDFOX_API_KEY，或在本地 shell 配置文件（如 ~/.zshrc / ~/.bashrc）中添加：", file=sys.stderr)
-        print("  export REDFOX_API_KEY=your_api_key_here", file=sys.stderr)
-        sys.exit(1)
+        raise RuntimeError("未找到 REDFOX_API_KEY 环境变量")
     
     # 构建请求
     url = "https://redfox.hk/story/api/xhs/search/search"
@@ -102,7 +134,9 @@ def fetch_xhs_hot_notes(keyword: str, debug: bool = False, max_retries: int = 3,
             if data.get("code") != 2000:
                 raise Exception(f"API 错误: {data.get('msg', '未知错误')}")
             
-            result_data = data.get("data", {})
+            result_data = data.get("data")
+            if not isinstance(result_data, dict):
+                raise Exception("API 响应结构错误：缺少 data 对象")
             
             if debug:
                 print("=== DEBUG: API 返回的 data 字段键 ===", file=sys.stderr)
@@ -110,10 +144,13 @@ def fetch_xhs_hot_notes(keyword: str, debug: bool = False, max_retries: int = 3,
                 print(f"总条数: {result_data.get('total', 0)}", file=sys.stderr)
             
             articles = result_data.get("articles", [])
+            if not isinstance(articles, list):
+                raise Exception("API 响应结构错误：articles 不是数组")
             return {
                 "keyword": result_data.get("keyword", keyword),
                 "articles": articles,
-                "total": len(articles),
+                "total": result_data.get("total", len(articles)),
+                "returnedCount": len(articles),
                 "pageNum": result_data.get("pageNum", page_num),
                 "pageSize": result_data.get("pageSize", page_size),
                 "hotTopics": result_data.get("hotTopics", []),
@@ -154,12 +191,13 @@ def get_cover_urls(data, max_items=10):
         cover_url = item.get('cover', '')
         note_id = item.get('id', '')
         title = (item.get('title', '') or item.get('desc', ''))[:30]
-        if cover_url and note_id:
+        link = valid_note_link(item)
+        if cover_url and note_id and link:
             urls.append({
                 'title': title,
                 'note_id': note_id,
                 'cover_url': cover_url,
-                'link': item.get('shareInfoLink', f"https://www.xiaohongshu.com/explore/{note_id}")
+                'link': link,
             })
     return urls
 
@@ -222,7 +260,7 @@ def format_as_html(data: dict, max_items: int = 10, start_date: str = None):
         collect_count = fuzzy_count(item.get('collectedCount', 0))
         
         # 作品链接
-        note_link = item.get('shareInfoLink') or f"https://www.xiaohongshu.com/explore/{note_id}"
+        note_link = valid_note_link(item)
         # 作者主页链接
         author_link = f"https://www.xiaohongshu.com/user/profile/{author_id}" if author_id else "#"
         
@@ -242,11 +280,15 @@ def format_as_html(data: dict, max_items: int = 10, start_date: str = None):
             </div>
             '''
 
+        title_html = (f'<a href="{note_link}" class="card-title" target="_blank" rel="noreferrer">{title}</a>'
+                      if note_link else f'<span class="card-title">{title}</span>')
+        view_html = (f'<a href="{note_link}" class="view-note-btn" target="_blank" rel="noreferrer">查看作品 ↗</a>'
+                     if note_link else '<span class="view-note-btn">链接缺失/无 xsec_token</span>')
         card_html = f'''
         <div class="card">
             <div class="card-title-row">
                 <span class="card-index">{idx + 1}.</span>
-                <a href="{note_link}" class="card-title" target="_blank">{title}</a>
+                {title_html}
             </div>
             <div class="card-meta">
                 <a href="{author_link}" class="author-link" target="_blank">{author_name}（{fuzzy_count(fans)}粉）</a>
@@ -257,7 +299,7 @@ def format_as_html(data: dict, max_items: int = 10, start_date: str = None):
             <div class="card-stats">
                 <span class="interaction-count">🔥 {interactive_count}互动</span>
                 <span class="detail-stats">👍{like_count} ⭐{collect_count}</span>
-                <a href="{note_link}" class="view-note-btn" target="_blank">查看作品 ↗</a>
+                {view_html}
             </div>
         </div>
         '''
@@ -513,21 +555,31 @@ def format_as_json(data: dict, max_items: int = 10):
     result = []
     for item in top_items:
         note_id = item.get('id', '')
+        note_link = valid_note_link(item)
         item_data = {
             'noteId': note_id,
             'title': item.get('title', '') or item.get('desc', '')[:50],
             'desc': item.get('desc', ''),
             'authorId': item.get('authorId', ''),
             'authorNickname': item.get('authorNickname', ''),
-            'authorFans': fuzzy_count(item.get('authorFans', 0)),
+            'authorFans': exact_count(item.get('authorFans')),
             'createTime': item.get('createTime', ''),
-            'noteLink': item.get('shareInfoLink') or f"https://www.xiaohongshu.com/explore/{note_id}",
+            'noteLink': note_link,
+            'linkStatus': 'available' if note_link else 'unavailable_missing_original_xsec_link',
             'authorLink': f"https://www.xiaohongshu.com/user/profile/{item.get('authorId', '')}" if item.get('authorId') else '',
-            'interactiveCount': fuzzy_count(item.get('interactiveCount', 0)),
-            'likedCount': fuzzy_count(item.get('likedCount', 0)),
-            'collectedCount': fuzzy_count(item.get('collectedCount', 0)),
-            'commentsCount': fuzzy_count(item.get('commentsCount', 0)),
-            'sharedCount': fuzzy_count(item.get('sharedCount', 0)),
+            'interactiveCount': exact_count(item.get('interactiveCount')),
+            'likedCount': exact_count(item.get('likedCount')),
+            'collectedCount': exact_count(item.get('collectedCount')),
+            'commentsCount': exact_count(item.get('commentsCount')),
+            'sharedCount': exact_count(item.get('sharedCount')),
+            'metricsRaw': {
+                'authorFans': item.get('authorFans'),
+                'interactiveCount': item.get('interactiveCount'),
+                'likedCount': item.get('likedCount'),
+                'collectedCount': item.get('collectedCount'),
+                'commentsCount': item.get('commentsCount'),
+                'sharedCount': item.get('sharedCount'),
+            },
         }
         # 有关键词时才输出评分字段
         if not is_full_site:
@@ -541,28 +593,34 @@ def format_as_json(data: dict, max_items: int = 10):
     latest_hot_result = []
     for item in latest_hot_items:
         note_id = item.get('id', '')
+        note_link = valid_note_link(item)
         latest_hot_result.append({
             'noteId': note_id,
             'title': item.get('title', '') or item.get('desc', '')[:50],
             'authorNickname': item.get('authorNickname', ''),
-            'authorFans': fuzzy_count(item.get('authorFans', 0)),
+            'authorFans': exact_count(item.get('authorFans')),
             'createTime': item.get('createTime', ''),
-            'noteLink': item.get('shareInfoLink') or f"https://www.xiaohongshu.com/explore/{note_id}",
+            'noteLink': note_link,
+            'linkStatus': 'available' if note_link else 'unavailable_missing_original_xsec_link',
             'authorLink': f"https://www.xiaohongshu.com/user/profile/{item.get('authorId', '')}" if item.get('authorId') else '',
-            'interactiveCount': fuzzy_count(item.get('interactiveCount', 0)),
-            'likedCount': fuzzy_count(item.get('likedCount', 0)),
-            'collectedCount': fuzzy_count(item.get('collectedCount', 0)),
+            'interactiveCount': exact_count(item.get('interactiveCount')),
+            'likedCount': exact_count(item.get('likedCount')),
+            'collectedCount': exact_count(item.get('collectedCount')),
         })
 
     return {
+        'status': 'success' if result else 'empty',
+        'source': 'redfox_third_party_snapshot',
         'keyword': data.get('keyword', ''),
         'total': data.get('total', 0),
+        'returnedCount': data.get('returnedCount', len(data.get('articles', []))),
         'pageNum': data.get('pageNum', 1),
         'pageSize': data.get('pageSize', 50),
         'isFullSite': is_full_site,
         'items': result,
         'latestHotArticles': latest_hot_result,
-        'relatedSearches': data.get('relatedSearches', [])
+        'relatedSearches': data.get('relatedSearches', []),
+        'retrievedAt': datetime.now().astimezone().isoformat(timespec='seconds')
     }
 
 
@@ -589,6 +647,22 @@ def main():
                        help='最大重试次数（默认3次）')
     
     args = parser.parse_args()
+
+    if args.max_items < 1:
+        parser.error('--max-items 必须大于 0')
+    if args.page_num < 1:
+        parser.error('--page-num 必须大于 0')
+    if args.page_size < 1 or args.page_size > 50:
+        parser.error('--page-size 必须在 1-50 之间')
+    if args.max_retries < 1:
+        parser.error('--max-retries 必须大于 0')
+    try:
+        start = date.fromisoformat(args.start_date) if args.start_date else None
+        end = date.fromisoformat(args.end_date) if args.end_date else None
+    except ValueError as exc:
+        parser.error(f'日期必须是 YYYY-MM-DD: {exc}')
+    if start and end and start > end:
+        parser.error('--start-date 不能晚于 --end-date')
     
     try:
         data = fetch_xhs_hot_notes(
@@ -604,18 +678,28 @@ def main():
         # 生成 JSON 数据（始终输出到 stdout，供智能体读取）
         json_data = format_as_json(data, max_items=args.max_items)
         
-        # 输出 JSON 到 stdout（智能体从此读取结构化数据）
-        print(json.dumps(json_data, ensure_ascii=False, indent=2))
-        
-        # 同时生成 HTML 文件
-        html_content = format_as_html(data, max_items=args.max_items, start_date=args.start_date)
-        keyword_safe = args.keyword.replace('"', '').replace(' ', '_') or '全站热门'
-        html_file = args.output_file or f"{keyword_safe}_热门数据.html"
-        with open(html_file, 'w', encoding='utf-8') as f:
-            f.write(html_content)
-        
-        # 统计信息输出到 stderr
-        print(f"✓ HTML 结果已保存到: {html_file}", file=sys.stderr)
+        if args.output_format == 'json':
+            rendered = json.dumps(json_data, ensure_ascii=False, indent=2)
+            print(rendered)
+            if args.output_file:
+                with open(args.output_file, 'w', encoding='utf-8') as f:
+                    f.write(rendered + '\n')
+                print(f"✓ JSON 结果已保存到: {args.output_file}", file=sys.stderr)
+        else:
+            html_content = format_as_html(data, max_items=args.max_items, start_date=args.start_date)
+            keyword_safe = args.keyword.replace('"', '').replace(' ', '_').replace('/', '_') or '全站热门'
+            html_file = args.output_file or f"{keyword_safe}_热门数据.html"
+            with open(html_file, 'w', encoding='utf-8') as f:
+                f.write(html_content)
+            print(json.dumps({
+                'status': json_data['status'],
+                'source': json_data['source'],
+                'outputFile': os.path.abspath(html_file),
+                'returnedCount': len(json_data['items']),
+                'retrievedAt': json_data['retrievedAt'],
+            }, ensure_ascii=False, indent=2))
+            print(f"✓ HTML 结果已保存到: {html_file}", file=sys.stderr)
+
         print(f"✓ 关键词: {args.keyword}", file=sys.stderr)
         print(f"✓ 总条数: {json_data['total']} 条", file=sys.stderr)
         print(f"✓ 筛选结果: {len(json_data['items'])} 条", file=sys.stderr)
@@ -630,6 +714,12 @@ def main():
                 
     except Exception as e:
         print(f"❌ 错误: {str(e)}", file=sys.stderr)
+        print(json.dumps({
+            'status': 'error',
+            'source': 'redfox_third_party_snapshot',
+            'keyword': args.keyword,
+            'message': str(e),
+        }, ensure_ascii=False))
         sys.exit(1)
 
 
