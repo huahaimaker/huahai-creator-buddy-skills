@@ -5,12 +5,13 @@ const utils = require("./utils");
 function redactPlainText(value) {
   let text = String(value);
   for (let index = 0; index < 3; index += 1) {
-    let decoded;
-    try {
-      decoded = decodeURIComponent(text);
-    } catch (_) {
-      break;
-    }
+    const decoded = text.replace(/(?:%[0-9A-Fa-f]{2})+/g, (encoded) => {
+      try {
+        return decodeURIComponent(encoded);
+      } catch (_) {
+        return encoded;
+      }
+    });
     if (decoded === text) break;
     text = decoded;
   }

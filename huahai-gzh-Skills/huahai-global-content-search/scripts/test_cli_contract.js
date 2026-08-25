@@ -74,6 +74,15 @@ assert.strictEqual(encodedTarget.result.status, 0);
 assert.ok(!encodedTarget.result.stderr.includes(encodedSecret));
 assert.match(encodedTarget.result.stderr, /\[REDACTED\]/);
 
+const malformedSecret = "malformed-percent-secret";
+const malformedTarget = invoke(detail, [
+  "--platform", "douyin",
+  "--url", `https://www.xiaohongshu.com/a?bad=%ZZ&xsec%255Ftoken=${malformedSecret}`,
+], { DOUYIN_COMMAND: "/bin/echo" });
+assert.strictEqual(malformedTarget.result.status, 0);
+assert.ok(!malformedTarget.result.stderr.includes(malformedSecret));
+assert.match(malformedTarget.result.stderr, /\[REDACTED\]/);
+
 async function verifyRedactedLogs() {
   const secret = "token-should-not-be-logged";
   const sample = JSON.stringify({
@@ -85,6 +94,7 @@ async function verifyRedactedLogs() {
     array: { xsec_token: [`array-${secret}`, "second"] },
     encoded: `https://example.com/a?xsec_token%3Dencoded-${secret}%2Fdef`,
     encodedName: `https://example.com/a?xsec%255Ftoken=encoded-name-${secret}`,
+    malformedPercent: `https://example.com/a?bad=%ZZ&xsec%255Ftoken=malformed-${secret}`,
   });
   const redacted = log.redactSensitive(sample);
   assert.ok(!redacted.includes(secret));
