@@ -141,6 +141,8 @@ def main() -> None:
 
     runtime_tests = [
         ["node", "huahai-gzh-Skills/huahai-global-content-search/scripts/test_cli_contract.js"],
+        [sys.executable, "huahai-xhs-Skills/huahai-space-xhs-note-analytics/scripts/test_xhs_notes.py"],
+        [sys.executable, "huahai-xhs-Skills/huahai-space-xhs-hotspot/scripts/test_hotspot_contract.py"],
         [sys.executable, "huahai-gzh-Skills/huahai-space-wechat-layout/scripts/test_render_wechat_layout.py"],
     ]
     for command in runtime_tests:
